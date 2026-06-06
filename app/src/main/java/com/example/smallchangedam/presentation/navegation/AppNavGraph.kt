@@ -5,7 +5,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.smallchangedam.presentation.admin.MainDashboard
-import com.example.smallchangedam.presentation.admin.ServerScreen
+import com.example.smallchangedam.presentation.auth.LoginScreen
+import com.example.smallchangedam.presentation.auth.RegisterScreen
+import com.example.smallchangedam.presentation.auth.VerificationScreen
 import com.example.smallchangedam.presentation.home.HomeScreen
 import com.example.smallchangedam.presentation.offers.PublishOfferScreen
 
@@ -15,13 +17,54 @@ fun AppNavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = "home"
-    ){
-        composable ( "home" ){
-                HomeScreen(navController = navController)
+        startDestination = "login"
+    ) {
+        // --- Autenticación ---
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate("register")
+                }
+            )
         }
-        composable("publicarOferta") { PublishOfferScreen(navController) }
-        composable("adminPanel") { MainDashboard(navController) }
-    }
 
+        composable("register") {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.navigate("verification")
+                },
+                onNavigateToLogin = {
+                    navController.navigate("login")
+                }
+            )
+        }
+
+        composable("verification") {
+            VerificationScreen(
+                onVerificationSuccess = {
+                    navController.navigate("login") {
+                        popUpTo("register") { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // --- Aplicación ---
+        composable("home") {
+            HomeScreen(navController = navController)
+        }
+
+        composable("publicarOferta") { 
+            PublishOfferScreen(navController) 
+        }
+
+        composable("adminPanel") { 
+            MainDashboard(navController) 
+        }
+    }
 }
