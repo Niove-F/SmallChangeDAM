@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.smallchangedam.presentation.home.HomeScreen
+import com.example.smallchangedam.presentation.offers.PublishOfferScreen
 import com.example.smallchangedam.ui.theme.SmallChangeDAMTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SmallChangeDAMTheme {
 
-                HomeScreen()
+                AppNavGraph()
                 //Scaffold(modifier = Modifier.fillMaxSize())
                 //{
                         //innerPadding -> AppNavGraph()
