@@ -1,6 +1,5 @@
 package com.example.smallchangedam.presentation.home
 
-import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,12 +11,14 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 data class Oferta(
     val usuario: String,
@@ -34,10 +35,17 @@ val ColorGrisFondo = Color(0xFFE0E0E0)
 val ColorBlancoFondo = Color(0xFFF8F9FA)
 val ColorVerdeTag = Color(0xFF72C075)
 
+sealed interface HomeEvent {
+    object ClickTipoCambio : HomeEvent
+    object ClickMisOfertas : HomeEvent
+    object ClickPublicar : HomeEvent
+    // Botones nuevos se agregan aca
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
-    // Datos de prueba basados en tu captura
+fun HomeScreen(navController: NavController) {
+    // Datos de prueba
     val listaOfertas = listOf(
         Oferta("Emma R.", 3.9, "Quiere comprar", "$ 150", "3.76", "Hace 5 min"),
         Oferta("Martín Perez", 4.1, "Quiere comprar", "€ 300", "3.98", "Hace 2 horas"),
@@ -64,7 +72,7 @@ fun HomeScreen() {
             )
         },
         bottomBar = {
-            BottomBarSeccion()
+            BottomBarSeccion(navController = navController)
         }
     ) { paddingValues ->
         Column(
@@ -73,7 +81,7 @@ fun HomeScreen() {
                 .padding(paddingValues)
                 .background(ColorBlancoFondo)
         ) {
-            // 1. Sección de Filtros (Fondo Gris)
+            // 1. Sección de Filtros
             FiltrosSeccion()
 
             // Ordenar por...
@@ -130,7 +138,9 @@ fun FiltroDropdown(text: String, modifier: Modifier = Modifier) {
         modifier = modifier.height(40.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -148,7 +158,9 @@ fun FiltroInput(placeholder: String, modifier: Modifier = Modifier) {
         modifier = modifier.height(40.dp)
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(text = placeholder, fontSize = 12.sp, color = Color.LightGray)
@@ -232,7 +244,7 @@ fun TarjetaOferta(oferta: Oferta) {
 }
 
 @Composable
-fun BottomBarSeccion() {
+fun BottomBarSeccion(navController: NavController) {
     Surface(
         color = ColorMarron,
         modifier = Modifier.fillMaxWidth()
@@ -243,13 +255,22 @@ fun BottomBarSeccion() {
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
+            Button(onClick = { navController.navigate("tipoCambio") },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                shape = RoundedCornerShape(8.dp)
+            ) {
                 Text("Tipo de Cambio", color = Color.Black, fontSize = 12.sp)
             }
-            Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
+            Button(onClick = { navController.navigate("misOfertas") },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                shape = RoundedCornerShape(8.dp)
+            ) {
                 Text("Mis Ofertas", color = Color.Black, fontSize = 12.sp)
             }
-            Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
+            Button(onClick = { navController.navigate("publicarOferta") },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                shape = RoundedCornerShape(8.dp)
+            ) {
                 Text("Publicar Oferta", color = Color.Black, fontSize = 12.sp)
             }
         }
