@@ -21,28 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.smallchangedam.presentation.home.HomeScreen
 
 val BrownTheme = Color(0xFFA67C52)
 val LightBackground = Color(0xFFFAFAFA)
 val AlertBackground = Color(0xFFF7F2F2)
 val AlertRed = Color(0xFFB71C1C)
-
-class PublishOffer : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = LightBackground
-                ) {
-                    HomeScreen()
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
