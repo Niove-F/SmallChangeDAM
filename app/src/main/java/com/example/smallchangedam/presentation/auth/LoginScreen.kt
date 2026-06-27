@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -72,7 +71,7 @@ fun LoginScreen(
                 modifier = Modifier.padding(bottom = 10.dp, top = 15.dp)
             ) {
                 Text(
-                    text = "Bienvenido de\nVuelta",
+                    text = "Bienvenido de vuelta",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
@@ -261,10 +260,4 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(onLoginSuccess = {}, onNavigateToRegister = {})
 }
