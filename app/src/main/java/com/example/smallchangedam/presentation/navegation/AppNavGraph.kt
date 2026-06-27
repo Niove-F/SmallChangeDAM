@@ -9,9 +9,12 @@ import com.example.smallchangedam.presentation.auth.LoginScreen
 import com.example.smallchangedam.presentation.auth.RegisterScreen
 import com.example.smallchangedam.presentation.auth.VerificationScreen
 import com.example.smallchangedam.presentation.home.HomeScreen
+import com.example.smallchangedam.presentation.offers.DetallesOfertaOtroUsuario
 import com.example.smallchangedam.presentation.offers.PublishOfferScreen
 import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
 import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 @Composable
 fun AppNavGraph() {
@@ -63,6 +66,14 @@ fun AppNavGraph() {
 
         composable("publicarOferta") { 
             PublishOfferScreen(navController) 
+        }
+
+        composable(
+            route = "detallesOferta/{ofertaId}",
+            arguments = listOf(navArgument("ofertaId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val ofertaId = backStackEntry.arguments?.getInt("ofertaId") ?: 0
+            DetallesOfertaOtroUsuario(navController = navController, ofertaId = ofertaId)
         }
 
         composable("adminPanel") {
