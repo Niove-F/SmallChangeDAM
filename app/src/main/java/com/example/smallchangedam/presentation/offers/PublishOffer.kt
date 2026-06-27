@@ -22,7 +22,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.smallchangedam.presentation.home.HomeScreen
+import kotlinx.coroutines.launch
+
+// Importa tus clases de datos y tu cliente Retrofit (Asegúrate de que estas rutas coincidan con tu proyecto)
+import com.example.smallchangedam.data.OfertaRequest
+import com.example.smallchangedam.data.RetrofitClient
 
 val BrownTheme = Color(0xFFA67C52)
 val LightBackground = Color(0xFFFAFAFA)
@@ -34,18 +38,22 @@ val AlertRed = Color(0xFFB71C1C)
 fun PublishOfferScreen(navController: NavController) {
     var tengoExpanded by remember { mutableStateOf(false) }
     var quieroExpanded by remember { mutableStateOf(false) }
-
     var tengoCurrency by remember { mutableStateOf("USD - Dolares") }
     var quieroCurrency by remember { mutableStateOf("EUR - Euro") }
-
     var cantidad by remember { mutableStateOf("1000.00") }
     var tasa by remember { mutableStateOf("1.17") }
 
-    val currencyOptions = listOf("USD - Dolares", "EUR - Euro", "PEN - Soles")
+    // CONEXIÓN API ---
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    // Scope para lanzar la petición de red en segundo plano
+    val coroutineScope = rememberCoroutineScope()
 
+    val currencyOptions = listOf("USD - Dolares", "EUR - Euro", "PEN - Soles")
     val tasaValue = tasa.toDoubleOrNull() ?: 0.0
     val isRateLow = tasaValue < 1.5
-    val isButtonEnabled = !isRateLow && tasa.isNotEmpty() && cantidad.isNotEmpty()
+    // El botón solo se habilita si los datos son válidos y NO está cargando
+    val isButtonEnabled = !isRateLow && tasa.isNotEmpty() && cantidad.isNotEmpty() && !isLoading
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -79,7 +87,7 @@ fun PublishOfferScreen(navController: NavController) {
                 text = "Volver | Inicio > Mis ofertas > Publicar...",
                 fontSize = 12.sp,
                 color = Color.DarkGray,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp).clickable { navController.popBackStack() }
             )
 
             Text(
@@ -198,19 +206,61 @@ fun PublishOfferScreen(navController: NavController) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // MOSTRAR MENSAJE DE ERROR DE LA API ---
+            errorMessage?.let { error ->
+                Text(
+                    text = error,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
 
+            Spacer(modifier = Modifier.height(32.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = { navController.navigate("home") }) {
-                    Text("Cancelar", color = Color.DarkGray)
+                TextButton(
+                    onClick = { navController.popBackStack() },
+                    enabled = !isLoading // Deshabilitar si está cargando
+                ) {
+                    Text("Cancelar", color = if(isLoading) Color.LightGray else Color.DarkGray)
                 }
 
                 Button(
-                    onClick = { navController.navigate("home" ) /*makeshift for now*/ },
+                    // Conexion API
+                    onClick = {
+                        coroutineScope.launch {
+                            isLoading = true
+                            errorMessage = null
+
+                            try {
+                                val monedaOrigen = tengoCurrency.split(" ")[0]
+                                val monedaDestino = quieroCurrency.split(" ")[0]
+
+                                val request = OfertaRequest(
+                                    monedaAEnviar = monedaOrigen,
+                                    monedaARecibir = monedaDestino,
+                                    cantidad = cantidad.toDoubleOrNull() ?: 0.0,
+                                    tipoCambio = tasa.toDoubleOrNull() ?: 0.0
+                                )
+
+                                // Llamada HTTP
+                                val response = RetrofitClient.apiService.crearOferta(request)
+
+                                navController.navigate("home") {
+                                    popUpTo("home") { inclusive = true } // Limpiar historial
+                                }
+
+                            } catch (e: Exception) {
+                                errorMessage = "Error de conexión: ${e.message}"
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    },
                     enabled = isButtonEnabled,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = BrownTheme,
@@ -222,7 +272,15 @@ fun PublishOfferScreen(navController: NavController) {
                         .padding(start = 16.dp)
                         .height(48.dp)
                 ) {
-                    Text("Publicar Oferta", color = if (isButtonEnabled) Color.White else Color.DarkGray)
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Publicar Oferta", color = if (isButtonEnabled) Color.White else Color.DarkGray)
+                    }
                 }
             }
 

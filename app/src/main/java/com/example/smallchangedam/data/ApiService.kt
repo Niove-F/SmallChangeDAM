@@ -9,7 +9,7 @@ interface ApiService {
     suspend fun registrarUsuario(@Body request: RegistroRequest): ClienteResponse
 
     @POST("api/auth/login")
-    suspend fun loginUsuario(@Body request: LoginRequest): ClienteResponse
+    suspend fun loginUsuario(@Body request: LoginRequest): LoginResponse
 
     // --- CLIENTES ---
     @GET("api/clientes")
