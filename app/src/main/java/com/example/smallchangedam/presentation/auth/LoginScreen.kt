@@ -14,16 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import com.google.gson.Gson
 
-// Importamos tus clases de datos, cliente API y componentes
 import com.example.smallchangedam.presentation.components.CustomInputField
 import com.example.smallchangedam.data.LoginRequest
 import com.example.smallchangedam.data.RetrofitClient
 import com.example.smallchangedam.data.SessionManager
+import com.example.smallchangedam.data.ValidationErrorResponse
 
 private val ColorMarron = Color(0xFFB08968)
 private val ColorGrisClaro = Color(0xFFD9D9D9)
@@ -37,7 +38,7 @@ fun LoginScreen(
     var contrasena by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    // CONEXIÓN API ---
+    // Conexión API
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -58,7 +59,6 @@ fun LoginScreen(
             .background(Color.White)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header con curva
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -114,7 +114,7 @@ fun LoginScreen(
         ) {
             Column {
                 Text(
-                    text = "Ingrese su correo:", // Cambiado a correo para mayor precisión
+                    text = "Ingrese su correo:",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black,
@@ -122,7 +122,10 @@ fun LoginScreen(
                 )
                 CustomInputField(
                     value = usuario,
-                    onValueChange = { usuario = it },
+                    onValueChange = {
+                        usuario = it
+                        errorText = null
+                    },
                     placeholder = "Ej.: pepitopancracio@yahoo.com"
                 )
             }
@@ -137,12 +140,15 @@ fun LoginScreen(
                 )
                 CustomInputField(
                     value = contrasena,
-                    onValueChange = { contrasena = it },
+                    onValueChange = {
+                        contrasena = it
+                        errorText = null
+                    },
                     placeholder = "● ● ● ● ● ● ● ●",
                     isPassword = true
                 )
                 Text(
-                    text = "Olvidaste tu contraseña?",
+                    text = "¿Olvidaste tu contraseña?",
                     fontSize = 14.sp,
                     color = Color(0xFF3F51B5),
                     textDecoration = TextDecoration.Underline,
@@ -156,7 +162,8 @@ fun LoginScreen(
                 Text(
                     text = errorText!!,
                     color = Color.Red,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
@@ -164,44 +171,65 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                // --- LÓGICA DE CONEXIÓN AL BACKEND AQUÍ ---
                 onClick = {
                     if (usuario.isBlank() || contrasena.isBlank()) {
                         errorText = "Por favor, completa todos los campos"
-                    } else {
-                        coroutineScope.launch {
-                            isLoading = true
-                            errorText = null
+                        return@Button
+                    }
 
-                            try {
-                                val request = LoginRequest(
-                                    email = usuario,
-                                    password = contrasena
-                                )
+                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(usuario).matches()) {
+                        errorText = "Ingresa un correo electrónico válido"
+                        return@Button
+                    }
 
-                                // Llamada a tu API en Visual Studio
-                                val response = RetrofitClient.apiService.loginUsuario(request)
+                    // Conexión al Backend
+                    coroutineScope.launch {
+                        isLoading = true
+                        errorText = null
 
-                                // Guardamos el token en la memoria global (SessionManager)
-                                SessionManager.authToken = response.token
+                        try {
+                            val request = LoginRequest(
+                                email = usuario,
+                                password = contrasena
+                            )
 
-                                // Si el login fue exitoso, navegamos al Home
-                                onLoginSuccess()
+                            val response = RetrofitClient.apiService.loginUsuario(request)
+                            SessionManager.authToken = response.token
+                            onLoginSuccess()
 
-                            } catch (e: Exception) {
-                                // Capturamos errores como 401 (No autorizado) o falla de red
-                                errorText = if (e.message?.contains("401") == true) {
-                                    "Correo o contraseña incorrectos"
-                                } else {
-                                    "Error de conexión: ${e.message}"
+                        } catch (e: HttpException) {
+                            // Procesamiento de errores HTTP
+                            when (e.code()) {
+                                400 -> {
+                                    val errorBody = e.response()?.errorBody()?.string()
+                                    if (!errorBody.isNullOrEmpty()) {
+                                        try {
+                                            val errorResponse = Gson().fromJson(errorBody, ValidationErrorResponse::class.java)
+
+                                            val primerError = errorResponse.errors?.values?.firstOrNull()?.firstOrNull()
+                                            errorText = primerError ?: "Error en los datos ingresados"
+                                        } catch (parseEx: Exception) {
+                                            errorText = "Error al procesar la validación."
+                                        }
+                                    } else {
+                                        errorText = "Datos ingresados no válidos."
+                                    }
                                 }
-                            } finally {
-                                isLoading = false
+                                401 -> {
+                                    errorText = "Correo o contraseña incorrectos."
+                                }
+                                else -> {
+                                    errorText = "Error del servidor: ${e.code()}"
+                                }
                             }
+                        } catch (e: Exception) {
+                            errorText = "Error de red: revisa tu conexión a internet."
+                        } finally {
+                            isLoading = false
                         }
                     }
                 },
-                enabled = !isLoading, // Se deshabilita para evitar múltiples clics
+                enabled = !isLoading,
                 modifier = Modifier
                     .width(240.dp)
                     .height(56.dp)
@@ -232,10 +260,4 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(onLoginSuccess = {}, onNavigateToRegister = {})
 }
