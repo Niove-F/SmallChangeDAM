@@ -1,12 +1,13 @@
 package com.example.smallchangedam.data
 
 import retrofit2.http.*
+import retrofit2.Response
 
 interface ApiService {
 
     // --- AUTENTICACIÓN ---
     @POST("api/auth/registro")
-    suspend fun registrarUsuario(@Body request: RegistroRequest): ClienteResponse
+    suspend fun registrarUsuario(@Body request: RegistroRequest): Response<AuthResponse> //captura manualmente codigos como 400
 
     @POST("api/auth/login")
     suspend fun loginUsuario(@Body request: LoginRequest): ClienteResponse
