@@ -17,7 +17,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+
+// Importamos tus clases de datos, cliente API y componentes
 import com.example.smallchangedam.presentation.components.CustomInputField
+import com.example.smallchangedam.data.LoginRequest
+import com.example.smallchangedam.data.RetrofitClient
+import com.example.smallchangedam.data.SessionManager
 
 private val ColorMarron = Color(0xFFB08968)
 private val ColorGrisClaro = Color(0xFFD9D9D9)
@@ -30,6 +36,10 @@ fun LoginScreen(
     var usuario by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
+
+    // CONEXIÓN API ---
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     val curveShape = GenericShape { size, _ ->
         moveTo(0f, 0f)
@@ -104,15 +114,15 @@ fun LoginScreen(
         ) {
             Column {
                 Text(
-                    text = "Ingrese su usuario o correo:",
+                    text = "Ingrese su correo:", // Cambiado a correo para mayor precisión
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black,
                     modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                 )
                 CustomInputField(
-                    value = usuario, 
-                    onValueChange = { usuario = it }, 
+                    value = usuario,
+                    onValueChange = { usuario = it },
                     placeholder = "Ej.: pepitopancracio@yahoo.com"
                 )
             }
@@ -126,9 +136,9 @@ fun LoginScreen(
                     modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                 )
                 CustomInputField(
-                    value = contrasena, 
-                    onValueChange = { contrasena = it }, 
-                    placeholder = "● ● ● ● ● ● ● ●", 
+                    value = contrasena,
+                    onValueChange = { contrasena = it },
+                    placeholder = "● ● ● ● ● ● ● ●",
                     isPassword = true
                 )
                 Text(
@@ -154,30 +164,71 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { 
+                // --- LÓGICA DE CONEXIÓN AL BACKEND AQUÍ ---
+                onClick = {
                     if (usuario.isBlank() || contrasena.isBlank()) {
                         errorText = "Por favor, completa todos los campos"
                     } else {
-                        errorText = null
-                        onLoginSuccess()
+                        coroutineScope.launch {
+                            isLoading = true
+                            errorText = null
+
+                            try {
+                                val request = LoginRequest(
+                                    email = usuario,
+                                    password = contrasena
+                                )
+
+                                // Llamada a tu API en Visual Studio
+                                val response = RetrofitClient.apiService.loginUsuario(request)
+
+                                // Guardamos el token en la memoria global (SessionManager)
+                                SessionManager.authToken = response.token
+
+                                // Si el login fue exitoso, navegamos al Home
+                                onLoginSuccess()
+
+                            } catch (e: Exception) {
+                                // Capturamos errores como 401 (No autorizado) o falla de red
+                                errorText = if (e.message?.contains("401") == true) {
+                                    "Correo o contraseña incorrectos"
+                                } else {
+                                    "Error de conexión: ${e.message}"
+                                }
+                            } finally {
+                                isLoading = false
+                            }
+                        }
                     }
                 },
+                enabled = !isLoading, // Se deshabilita para evitar múltiples clics
                 modifier = Modifier
                     .width(240.dp)
                     .height(56.dp)
                     .align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.buttonColors(containerColor = ColorMarron),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ColorMarron,
+                    disabledContainerColor = Color.LightGray
+                ),
                 shape = RoundedCornerShape(12.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
-                Text(
-                    text = "INICIAR SESIÓN",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "INICIAR SESIÓN",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
-            
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }

@@ -10,7 +10,7 @@ interface ApiService {
     suspend fun registrarUsuario(@Body request: RegistroRequest): Response<AuthResponse> //captura manualmente codigos como 400
 
     @POST("api/auth/login")
-    suspend fun loginUsuario(@Body request: LoginRequest): ClienteResponse
+    suspend fun loginUsuario(@Body request: LoginRequest): LoginResponse
 
     // --- CLIENTES ---
     @GET("api/clientes")

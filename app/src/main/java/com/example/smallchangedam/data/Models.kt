@@ -15,6 +15,11 @@ data class LoginRequest(
     val password: String
 )
 
+data class LoginResponse(
+    val token: String,
+    val mensaje: String? = null
+)
+
 data class AuthResponse(
     val mensaje: String
 )
@@ -35,9 +40,9 @@ data class ClienteResponse(
 // --- OFERTAS ---
 
 data class OfertaRequest(
-    val clienteId: Int,
     val monedaAEnviar: String,
     val monedaARecibir: String,
+    val cantidad: Double,
     val tipoCambio: Double
 )
 
@@ -46,8 +51,18 @@ data class OfertaResponse(
     val clienteId: Int,
     val monedaAEnviar: String,
     val monedaARecibir: String,
+    val cantidad: Double,
     val tipoCambio: Double,
-    val estado: Boolean
+    val estado: Boolean,
+    val fechaCreacion: String
+)
+
+data class OfertaUpdateRequest(
+    val monedaAEnviar: String?,
+    val monedaARecibir: String?,
+    val cantidad: Double?,
+    val tipoCambio: Double?,
+    val estado: Boolean?
 )
 
 // --- TRANSACCIONES ---
