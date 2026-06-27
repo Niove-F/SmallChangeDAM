@@ -1,6 +1,7 @@
 package com.example.smallchangedam.presentation.perfil
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,12 +51,17 @@ import androidx.navigation.NavController
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfiguracionScreen(
-    navController: NavController,
-    onBackClick: () -> Unit = {}
+    navController: NavController
 ) {
+    val ColorMarron = Color(0xFFB08968)
+    val ColorGrisFondo = Color(0xFFE0E0E0)
+    val ColorBlancoFondo = Color(0xFFF8F9FA)
+    val ColorVerdeTag = Color(0xFF72C075)
     Scaffold(
+        containerColor = ColorBlancoFondo,
         topBar = {
             TopAppBar(
+                colors = TopAppBarColors(ColorMarron,ColorBlancoFondo,ColorBlancoFondo, ColorBlancoFondo, ColorBlancoFondo, ColorBlancoFondo),
                 title = {
                     Text(
                         text = "Configuración",
@@ -63,13 +70,14 @@ fun ConfiguracionScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { navController.navigate( "home" ) } ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Regresar"
                         )
                     }
                 }
+
             )
         }
     ) { paddingValues ->

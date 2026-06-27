@@ -1,6 +1,7 @@
 package com.example.smallchangedam.presentation.perfil
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -34,9 +35,15 @@ fun EditarPerfilScreen(
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
 
+    val ColorMarron = Color(0xFFB08968)
+    val ColorGrisFondo = Color(0xFFE0E0E0)
+    val ColorBlancoFondo = Color(0xFFF8F9FA)
+    val ColorVerdeTag = Color(0xFF72C075)
+
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarColors(ColorMarron,ColorBlancoFondo,ColorBlancoFondo, ColorBlancoFondo, ColorBlancoFondo, ColorBlancoFondo),
                 title = {
                     Text(
                         text = "Editar Perfil",
@@ -60,8 +67,10 @@ fun EditarPerfilScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .background(ColorBlancoFondo)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
+
         ) {
             // Cabecera de Usuario
             Row(
@@ -103,7 +112,7 @@ fun EditarPerfilScreen(
                             modifier = Modifier
                                 .padding(16.dp)
                                 .fillMaxSize(),
-                            tint = Color.Gray
+                            tint = ColorGrisFondo
                         )
                     }
                     Text(
