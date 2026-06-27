@@ -18,7 +18,6 @@ import com.example.smallchangedam.presentation.offers.PublishOfferScreen
 import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
 import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 import com.example.smallchangedam.presentation.perfil.ProfileScreen
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 
 @Composable
