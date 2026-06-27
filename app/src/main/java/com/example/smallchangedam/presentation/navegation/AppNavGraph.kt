@@ -19,7 +19,7 @@ fun AppNavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = "adminPanel"
+        startDestination = "register"
     ) {
         // --- Autenticación ---
         composable("login") {
