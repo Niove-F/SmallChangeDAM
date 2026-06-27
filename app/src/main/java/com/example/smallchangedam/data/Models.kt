@@ -20,6 +20,15 @@ data class LoginResponse(
     val mensaje: String? = null
 )
 
+data class AuthResponse(
+    val mensaje: String
+)
+
+//atrapa errores 400 bad request
+data class ValidationErrorResponse(
+    val errors: Map<String, List<String>>? = null
+)
+
 data class ClienteResponse(
     val id: Int,
     val nombre: String,

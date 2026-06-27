@@ -71,7 +71,7 @@ fun LoginScreen(
                 modifier = Modifier.padding(bottom = 10.dp, top = 15.dp)
             ) {
                 Text(
-                    text = "Bienvenido de\nVuelta",
+                    text = "Bienvenido de vuelta",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
