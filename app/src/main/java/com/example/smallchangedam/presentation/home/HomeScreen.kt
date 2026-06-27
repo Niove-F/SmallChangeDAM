@@ -286,7 +286,7 @@ fun TarjetaOferta(oferta: OfertaUI, navController: NavController) {
             }
 
             Text(
-                text = "Tú das: ${oferta.monto} ${oferta.monedaADar}  |  Tú recibes: $totalFormateado",
+                text = "Tú das: $totalFormateado  |  Tú recibes: ${oferta.monto} ${oferta.monedaADar}",
                 color = Color.Black,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
@@ -303,7 +303,7 @@ fun TarjetaOferta(oferta: OfertaUI, navController: NavController) {
                     colors = CardDefaults.cardColors(containerColor = ColorVerdeTag)
                 ) {
                     Text(
-                        text = "T.C.: ${oferta.tc}",
+                        text = "TC: ${oferta.tc} ${oferta.monedaARecibir}/${oferta.monedaADar}",
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                         fontSize = 18.sp,
