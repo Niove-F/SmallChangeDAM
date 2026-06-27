@@ -52,16 +52,16 @@ fun LoginScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(260.dp)
+                .height(300.dp)
                 .background(ColorGrisClaro, shape = curveShape),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(bottom = 20.dp)
+                modifier = Modifier.padding(bottom = 10.dp, top = 15.dp)
             ) {
                 Text(
-                    text = "Bienvenido de\nVuelta",
+                    text = "Bienvenido de vuelta",
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
