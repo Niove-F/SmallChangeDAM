@@ -183,9 +183,11 @@ fun TarjetaOferta(oferta: Oferta, navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp))
+                    IconButton(onClick = { navController.navigate( "perfil/${oferta.usuario}/${oferta.calificacion}" ) } ) {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp))
+                    }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = oferta.usuario, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(text = oferta.usuario, fontWeight = FontWeight.Bold, fontSize = 16.sp, )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
