@@ -64,7 +64,7 @@ fun HomeScreen(navController: NavController) {
                     )
                 },
                 actions = {
-                    IconButton(onClick = { /* Acción perfil */ }) {
+                    IconButton(onClick = { navController.navigate("configUser") }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Perfil", tint = Color.White)
                     }
                 },

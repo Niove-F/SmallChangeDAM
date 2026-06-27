@@ -10,6 +10,8 @@ import com.example.smallchangedam.presentation.auth.RegisterScreen
 import com.example.smallchangedam.presentation.auth.VerificationScreen
 import com.example.smallchangedam.presentation.home.HomeScreen
 import com.example.smallchangedam.presentation.offers.PublishOfferScreen
+import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
+import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 
 @Composable
 fun AppNavGraph() {
@@ -17,7 +19,7 @@ fun AppNavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = "adminPanel"
     ) {
         // --- Autenticación ---
         composable("login") {
@@ -63,8 +65,14 @@ fun AppNavGraph() {
             PublishOfferScreen(navController) 
         }
 
-        composable("adminPanel") { 
+        composable("adminPanel") {
             MainDashboard(navController) 
+        }
+        composable("editarPerfil"){
+            EditarPerfilScreen(navController)
+        }
+        composable("configUser"){
+            ConfiguracionScreen(navController)
         }
     }
 }

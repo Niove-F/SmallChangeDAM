@@ -44,12 +44,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfiguracionScreen(
-    onBackClick: () -> Unit = {},
-    onEditProfileClick: () -> Unit = {}
+    navController: NavController,
+    onBackClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -105,7 +106,7 @@ fun ConfiguracionScreen(
 
                 Box(
                     contentAlignment = Alignment.BottomEnd,
-                    modifier = Modifier.clickable { onEditProfileClick() }
+                    modifier = Modifier.clickable { navController.navigate("editarPerfil") }
                 ) {
                     Surface(
                         modifier = Modifier.size(90.dp),
@@ -190,10 +191,4 @@ fun ConfigOptionRow(item: ConfigItem) {
         }
         HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ConfiguracionScreenPreview() {
-    ConfiguracionScreen()
 }

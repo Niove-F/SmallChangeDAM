@@ -20,10 +20,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditarPerfilScreen(
+    navController: NavController,
     onBackClick: () -> Unit = {}
 ) {
     var nombres by remember { mutableStateOf("") }
@@ -43,7 +45,7 @@ fun EditarPerfilScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { navController.navigate( "configUser" ) } ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Atrás"
@@ -135,7 +137,7 @@ fun EditarPerfilScreen(
 
             // Botón de Acción
             Button(
-                onClick = { /* TODO: Confirmar cambios */ },
+                onClick = { navController.navigate("configUser") },
                 modifier = Modifier
                     .width(160.dp)
                     .padding(bottom = 32.dp),
@@ -188,10 +190,4 @@ fun EditarPerfilTextField(
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         singleLine = true
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EditarPerfilScreenPreview() {
-    EditarPerfilScreen()
 }
