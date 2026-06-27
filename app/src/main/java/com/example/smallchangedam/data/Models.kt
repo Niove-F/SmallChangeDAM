@@ -49,6 +49,8 @@ data class OfertaRequest(
 data class OfertaResponse(
     val id: Int,
     val clienteId: Int,
+    val nombreUsuario: String?,
+    val calificacionUsuario: Double?,
     val monedaAEnviar: String,
     val monedaARecibir: String,
     val cantidad: Double,

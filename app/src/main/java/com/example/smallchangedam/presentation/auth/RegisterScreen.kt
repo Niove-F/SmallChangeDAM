@@ -39,7 +39,6 @@ fun RegisterScreen(
     var confirmarContrasena by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    // Estados de error independientes
     var errorGeneral by remember { mutableStateOf<String?>(null) }
     var errorCorreo by remember { mutableStateOf<String?>(null) }
     var errorContrasena by remember { mutableStateOf<String?>(null) }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -12,7 +13,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,8 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.smallchangedam.data.OfertaResponse
+import com.example.smallchangedam.data.RetrofitClient
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
-data class Oferta(
+data class OfertaUI(
     val id: Int,
     val usuario: String,
     val calificacion: Double,
@@ -32,7 +38,7 @@ data class Oferta(
     val tiempo: String
 )
 
-//COLORESS (por ahora)
+// COLORESS
 val ColorMarron = Color(0xFFB08968)
 val ColorGrisFondo = Color(0xFFE0E0E0)
 val ColorBlancoFondo = Color(0xFFF8F9FA)
@@ -41,12 +47,49 @@ val ColorVerdeTag = Color(0xFF72C075)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    // Datos de prueba basados en tu captura
-    val listaOfertas = listOf(
-        Oferta(1, "Emma R.", 3.9, "USD", "PEN", "150", "3.76", "Hace 5 min"),
-        Oferta(2, "Martín Perez", 4.1, "EUR", "PEN", "300", "3.98", "Hace 2 horas"),
-        Oferta(3, "Rosa Rosales", 3.8, "PEN", "USD", "500", "0.26", "Hace 4 min")
-    )
+    var ofertasTotales by remember { mutableStateOf<List<OfertaUI>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var itemsVisibles by remember { mutableIntStateOf(10) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(Unit) {
+        try {
+            isLoading = true
+            val response = RetrofitClient.apiService.listarOfertas()
+
+            ofertasTotales = response.map { ofertaBackend ->
+                OfertaUI(
+                    id = ofertaBackend.id,
+                    usuario = ofertaBackend.nombreUsuario ?: "Usuario #${ofertaBackend.clienteId}",
+                    calificacion = ofertaBackend.calificacionUsuario ?: 0.0,
+                    monedaADar = ofertaBackend.monedaAEnviar,
+                    monedaARecibir = ofertaBackend.monedaARecibir,
+                    monto = ofertaBackend.cantidad.toString(),
+                    tc = ofertaBackend.tipoCambio.toString(),
+                    tiempo = calcularTiempoTranscurrido(ofertaBackend.fechaCreacion)
+                )
+            }.sortedByDescending { it.id } // Ordenamos por las más recientes (ID mayor)
+
+        } catch (e: Exception) {
+            errorMessage = "Error al cargar las ofertas: ${e.message}"
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val reachedBottom: Boolean by remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisibleItem?.index != 0 && lastVisibleItem?.index == listState.layoutInfo.totalItemsCount - 1
+        }
+    }
+
+    LaunchedEffect(reachedBottom) {
+        if (reachedBottom && itemsVisibles < ofertasTotales.size) {
+            itemsVisibles += 10
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -77,10 +120,8 @@ fun HomeScreen(navController: NavController) {
                 .padding(paddingValues)
                 .background(ColorBlancoFondo)
         ) {
-            // 1. Sección de Filtros (Fondo Gris)
             FiltrosSeccion()
 
-            // Ordenar por...
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -90,18 +131,67 @@ fun HomeScreen(navController: NavController) {
             ) {
                 Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
             }
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = ColorMarron)
+                    }
+                }
+                errorMessage != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(16.dp))
+                    }
+                }
+                ofertasTotales.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "Aún no hay ofertas publicadas.", color = Color.Gray)
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val ofertasMostrar = ofertasTotales.take(itemsVisibles)
 
-            // 2. Lista de Ofertas
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(listaOfertas) { oferta ->
-                    TarjetaOferta(oferta, navController)
+                        items(ofertasMostrar) { oferta ->
+                            TarjetaOferta(oferta, navController)
+                        }
+                        // Indicador de carga cuando hace scroll hacia abajo
+                        if (itemsVisibles < ofertasTotales.size) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ColorMarron)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+fun calcularTiempoTranscurrido(fechaIso: String): String {
+    return try {
+        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+        format.timeZone = TimeZone.getTimeZone("UTC")
+        val date = format.parse(fechaIso) ?: return "Hace un momento"
+
+        val diffMilisegundos = Date().time - date.time
+        val minutos = diffMilisegundos / (1000 * 60)
+        val horas = minutos / 60
+        val dias = horas / 24
+
+        when {
+            dias > 0 -> "Hace $dias d"
+            horas > 0 -> "Hace $horas h"
+            minutos > 0 -> "Hace $minutos min"
+            else -> "Hace un momento"
+        }
+    } catch (e: Exception) {
+        "Fecha desconocida"
     }
 }
 
@@ -161,7 +251,7 @@ fun FiltroInput(placeholder: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TarjetaOferta(oferta: Oferta, navController: NavController) {
+fun TarjetaOferta(oferta: OfertaUI, navController: NavController) {
     val montoNumerico = oferta.monto.toDoubleOrNull() ?: 0.0
     val tcNumerico = oferta.tc.toDoubleOrNull() ?: 0.0
     val totalRecibido = montoNumerico * tcNumerico
@@ -176,7 +266,6 @@ fun TarjetaOferta(oferta: Oferta, navController: NavController) {
             .clickable { navController.navigate("detallesOferta/${oferta.id}") }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Fila superior: Usuario y Calificación
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -204,7 +293,6 @@ fun TarjetaOferta(oferta: Oferta, navController: NavController) {
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            // Fila central: Etiqueta T.C.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -226,7 +314,6 @@ fun TarjetaOferta(oferta: Oferta, navController: NavController) {
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray)
 
-            // Fila inferior: Tiempo transcurrido y botón Intercambiar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
