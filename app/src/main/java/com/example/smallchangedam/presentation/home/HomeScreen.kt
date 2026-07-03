@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-
+import com.example.smallchangedam.presentation.components.CustomBottomBar
 data class Oferta(
     val id: Int,
     val usuario: String,
@@ -48,60 +48,68 @@ fun HomeScreen(navController: NavController) {
         Oferta(3, "Rosa Rosales", 3.8, "PEN", "USD", "500", "0.26", "Hace 4 min")
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "SMALL CHANGE - Ofertas",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate("configUser") }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Perfil", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorMarron)
-            )
-        },
-        bottomBar = {
-            BottomBarSeccion(navController = navController)
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(ColorBlancoFondo)
-        ) {
-            // 1. Sección de Filtros (Fondo Gris)
-            FiltrosSeccion()
-
-            // Ordenar por...
-            Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "SMALL CHANGE - Ofertas",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    actions = {
+                        IconButton(onClick = { navController.navigate("configUser") }) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = "Perfil",
+                                tint = Color.White
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorMarron)
+                )
+            },
+        ) { paddingValues ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(ColorBlancoFondo)
             ) {
-                Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
-            }
+                // 1. Sección de Filtros (Fondo Gris)
+                FiltrosSeccion()
 
-            // 2. Lista de Ofertas
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(listaOfertas) { oferta ->
-                    TarjetaOferta(oferta, navController)
+                // Ordenar por...
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
                 }
+
+                // 2. Lista de Ofertas
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(listaOfertas) { oferta ->
+                        TarjetaOferta(oferta, navController)
+                    }
+                }
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
+        CustomBottomBar(
+            navController = navController,
+            modifier = Modifier.align(Alignment.BottomCenter) // Se ancla al fondo
+        )
     }
 }
 
