@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -54,6 +56,11 @@ fun HomeScreen(navController: NavController) {
     var itemsVisibles by remember { mutableIntStateOf(10) }
     val listState = rememberLazyListState()
 
+    var filtroMoneda by remember { mutableStateOf("Todas") }
+    var filtroOperacion by remember { mutableStateOf("Todos") } // "Todos", "Compra PEN", "Venta PEN"
+    var montoMinimo  by remember { mutableStateOf("") }
+    var montoMaximo  by remember { mutableStateOf("") }
+
     LaunchedEffect(Unit) {
         try {
             isLoading = true
@@ -76,6 +83,36 @@ fun HomeScreen(navController: NavController) {
             errorMessage = "Error al cargar las ofertas: ${e.message}"
         } finally {
             isLoading = false
+        }
+    }
+    val ofertasFiltradas by remember {
+        derivedStateOf {
+            ofertasTotales.filter { oferta ->
+                // 1. Filtro por Moneda (Aplica si coincide con lo que das o recibes)
+                val cumpleMoneda = filtroMoneda == "Todas" ||
+                        oferta.monedaADar == filtroMoneda ||
+                        oferta.monedaARecibir == filtroMoneda
+
+                // 2. Filtro por Operación (Ej: Si buscas "Comprar USD", buscas ofertas donde la Moneda a Recibir sea USD)
+                val cumpleOperacion = when (filtroOperacion) {
+                    "Todos" -> true
+                    "Dar PEN" -> oferta.monedaADar == "PEN"
+                    "Recibir PEN" -> oferta.monedaARecibir == "PEN"
+                    "Dar USD" -> oferta.monedaADar == "USD"
+                    "Recibir USD" -> oferta.monedaARecibir == "USD"
+                    else -> true
+                }
+
+                // 3. Filtros por Montos numéricos
+                val montoD = oferta.monto.toDoubleOrNull() ?: 0.0
+                val minD = montoMinimo.toDoubleOrNull() ?: Double.MIN_VALUE
+                val maxD = montoMaximo.toDoubleOrNull() ?: Double.MAX_VALUE
+
+                val cumpleMin = montoD >= minD
+                val cumpleMax = montoD <= maxD
+
+                cumpleMoneda && cumpleOperacion && cumpleMin && cumpleMax
+            }
         }
     }
 
@@ -124,7 +161,16 @@ Box(modifier = Modifier.fillMaxSize()) {
                 .background(ColorBlancoFondo)
         ) {
             // 1. Sección de Filtros (Fondo Gris)
-            FiltrosSeccion()
+            FiltrosSeccion(
+                filtroMoneda = filtroMoneda,
+                onMonedaChange = { filtroMoneda = it },
+                filtroOperacion = filtroOperacion,
+                onOperacionChange = { filtroOperacion = it },
+                montoMinimo = montoMinimo,
+                onMontoMinChange = { montoMinimo = it },
+                montoMaximo = montoMaximo,
+                onMontoMaxChange = { montoMaximo = it }
+            )
 
             // 2. Fila para "Ordenar por" alineada a la derecha
             Row(
@@ -157,7 +203,7 @@ Box(modifier = Modifier.fillMaxSize()) {
                 else -> {
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.weight(1f), // Reemplazamos fillMaxSize por weight para que no empuje el Spacer fuera de la vista de forma incorrecta
+                        modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -191,6 +237,63 @@ Box(modifier = Modifier.fillMaxSize()) {
         )
     }
 }
+@Composable
+fun FiltrosSeccion(
+    filtroMoneda: String,
+    onMonedaChange: (String) -> Unit,
+    filtroOperacion: String,
+    onOperacionChange: (String) -> Unit,
+    montoMinimo: String,
+    onMontoMinChange: (String) -> Unit,
+    montoMaximo: String,
+    onMontoMaxChange: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(ColorGrisFondo)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Dropdown de Monedas
+            FiltroDropdown(
+                text = if (filtroMoneda == "Todas") "Todas las monedas" else filtroMoneda,
+                options = listOf("Todas", "USD", "PEN", "EUR"),
+                modifier = Modifier.weight(1f),
+                onOptionSelected = onMonedaChange
+            )
+            // Dropdown de Operaciones
+            FiltroDropdown(
+                text = if (filtroOperacion == "Todos") "Cualquier Operación" else filtroOperacion,
+                options = listOf("Todos", "Dar PEN", "Recibir PEN", "Dar USD", "Recibir USD"),
+                modifier = Modifier.weight(1f),
+                onOptionSelected = onOperacionChange
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FiltroInput(
+                placeholder = "Monto mín",
+                value = montoMinimo,
+                onValueChange = onMontoMinChange,
+                modifier = Modifier.weight(1f)
+            )
+            FiltroInput(
+                placeholder = "Monto máx",
+                value = montoMaximo,
+                onValueChange = onMontoMaxChange,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
 fun calcularTiempoTranscurrido(fechaIso: String): String {
     return try {
         val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
@@ -213,58 +316,81 @@ fun calcularTiempoTranscurrido(fechaIso: String): String {
     }
 }
 
+
+
 @Composable
-fun FiltrosSeccion() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(ColorGrisFondo)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FiltroDropdown(text = "Todas las monedas", modifier = Modifier.weight(1f))
-            FiltroDropdown(text = "Compra/Venta", modifier = Modifier.weight(1f))
+fun FiltroDropdown(
+    text: String,
+    options: List<String>,
+    modifier: Modifier = Modifier,
+    onOptionSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Card(
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth().height(40.dp).clickable { expanded = true }
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = text, fontSize = 12.sp, color = Color.DarkGray)
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.Gray)
+            }
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FiltroInput(placeholder = "Monto mínimo", modifier = Modifier.weight(1f))
-            FiltroInput(placeholder = "Monto máximo", modifier = Modifier.weight(1f))
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White)
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, fontSize = 14.sp) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
+            }
         }
-        FiltroDropdown(text = "Fecha: Más reciente", modifier = Modifier.fillMaxWidth())
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FiltroDropdown(text: String, modifier: Modifier = Modifier) {
+fun FiltroInput(
+    placeholder: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = modifier.height(40.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = text, fontSize = 12.sp, color = Color.Gray)
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.Gray)
-        }
-    }
-}
-
-@Composable
-fun FiltroInput(placeholder: String, modifier: Modifier = Modifier) {
-    Card(
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        modifier = modifier.height(40.dp)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(text = placeholder, fontSize = 12.sp, color = Color.LightGray)
-        }
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder, fontSize = 12.sp, color = Color.LightGray) },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -272,9 +398,9 @@ fun FiltroInput(placeholder: String, modifier: Modifier = Modifier) {
 fun TarjetaOferta(oferta: OfertaUI, navController: NavController) {
     val montoNumerico = oferta.monto.toDoubleOrNull() ?: 0.0
     val tcNumerico = oferta.tc.toDoubleOrNull() ?: 0.0
+
     val totalRecibido = montoNumerico * tcNumerico
     val totalFormateado = "${String.format("%.2f", totalRecibido)} ${oferta.monedaARecibir}"
-
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),

@@ -1,19 +1,10 @@
 package com.example.smallchangedam.presentation.perfil
 
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -27,23 +18,19 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -53,15 +40,28 @@ import androidx.navigation.NavController
 fun ConfiguracionScreen(
     navController: NavController
 ) {
+    val context = LocalContext.current // <-- 1. Obtenemos el contexto actual de Android
+
+    var nombreUsuario by remember { mutableStateOf("Cargando...") }
+
+    // 2. Rescatamos solo el nombre al entrar
+    LaunchedEffect(Unit) {
+        val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+        nombreUsuario = sharedPreferences.getString("user_name", "Usuario") ?: "Usuario"
+    }
     val ColorMarron = Color(0xFFB08968)
     val ColorGrisFondo = Color(0xFFE0E0E0)
     val ColorBlancoFondo = Color(0xFFF8F9FA)
-    val ColorVerdeTag = Color(0xFF72C075)
+
     Scaffold(
         containerColor = ColorBlancoFondo,
         topBar = {
             TopAppBar(
-                colors = TopAppBarColors(ColorMarron,ColorBlancoFondo,ColorBlancoFondo, ColorBlancoFondo, ColorBlancoFondo, ColorBlancoFondo),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ColorMarron,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                ),
                 title = {
                     Text(
                         text = "Configuración",
@@ -70,14 +70,13 @@ fun ConfiguracionScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate( "home" ) } ) {
+                    IconButton(onClick = { navController.navigate("home") }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Regresar"
                         )
                     }
                 }
-
             )
         }
     ) { paddingValues ->
@@ -99,13 +98,7 @@ fun ConfiguracionScreen(
                     modifier = Modifier.padding(end = 16.dp)
                 ) {
                     Text(
-                        text = "Nombre",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 32.sp
-                    )
-                    Text(
-                        text = "Apellido",
+                        text = nombreUsuario,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         lineHeight = 32.sp
@@ -150,14 +143,25 @@ fun ConfiguracionScreen(
 
             HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
 
-            // Lista de Opciones
+            // Lista de Opciones con lambdas de acción personalizadas
             val configOptions = listOf(
-                ConfigItem(Icons.Filled.Star, "Tema de la Aplicación"),
-                ConfigItem(Icons.Filled.Info, "Cambiar Idioma"),
-                ConfigItem(Icons.Filled.Settings, "Divisa Predeterminada"),
-                ConfigItem(Icons.Default.Notifications, "Preferencias de Notifs."),
-                ConfigItem(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión"),
-                ConfigItem(Icons.Default.Delete, "Eliminar mi Cuenta")
+                ConfigItem(Icons.Filled.Star, "Tema de la Aplicación") {},
+                ConfigItem(Icons.Filled.Info, "Cambiar Idioma") {},
+                ConfigItem(Icons.Filled.Settings, "Divisa Predeterminada") {},
+                ConfigItem(Icons.Default.Notifications, "Preferencias de Notifs.") {},
+                ConfigItem(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión") {
+                    val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+
+                    sharedPreferences.edit()
+                        .remove("auth_token")
+                        .remove("user_name")
+                        .apply()
+
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
+                ConfigItem(Icons.Default.Delete, "Eliminar mi Cuenta") {}
             )
 
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
@@ -169,7 +173,12 @@ fun ConfiguracionScreen(
     }
 }
 
-data class ConfigItem(val icon: ImageVector, val text: String)
+// 4. Modificamos el data class para añadirle la acción onClick
+data class ConfigItem(
+    val icon: ImageVector,
+    val text: String,
+    val onClick: () -> Unit
+)
 
 @Composable
 fun ConfigOptionRow(item: ConfigItem) {
@@ -177,7 +186,7 @@ fun ConfigOptionRow(item: ConfigItem) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* TODO: Implementar acción */ }
+                .clickable { item.onClick() } // <-- Ejecuta la acción guardada en el item
                 .padding(vertical = 18.dp, horizontal = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -1,4 +1,5 @@
-﻿package com.example.smallchangedam.ui.screens
+package com.example.smallchangedam.ui.screens
+
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -51,14 +52,17 @@ import com.example.smallchangedam.data.OfertaRequest
 import com.example.smallchangedam.data.RetrofitClient
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.launch
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
-private val ColorMarron = Color(0xFFB08968)
-private val ColorGrisFondo = Color(0xFFE0E0E0)
-private val ColorBlancoFondo = Color(0xFFF8F9FA)
+import kotlinx.coroutines.launch
+
 private val ColorVerdeTag = Color(0xFF72C075)
+val BrownTheme = Color(0xFFA67C52)
+val LightBackground = Color(0xFFFAFAFA)
+val AlertBackground = Color(0xFFF7F2F2)
+val AlertRed = Color(0xFFB71C1C)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublishOfferScreen(
@@ -79,6 +83,8 @@ fun PublishOfferScreen(
     var expandedTengo by remember { mutableStateOf(false) }
     var expandedQuiero by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Carga inicial del catálogo de divisas
     LaunchedEffect(Unit) {
         isLoading = true
         errorMessage = null
@@ -116,6 +122,8 @@ fun PublishOfferScreen(
             isLoading = false
         }
     }
+
+    // Actualización de tasas de cambio según selección
     LaunchedEffect(tengoCurrency, quieroCurrency) {
         if (tengoCurrency.isBlank() || quieroCurrency.isBlank() || tengoCurrency == quieroCurrency) return@LaunchedEffect
         try {
@@ -143,6 +151,8 @@ fun PublishOfferScreen(
             errorMessage = "No fue posible obtener la tasa de cambio: ${e.message}"
         }
     }
+
+    // Cálculo dinámico local cuando cambia cantidad o tasa
     LaunchedEffect(cantidad, tasaCambio) {
         val cantDouble = cantidad.toDoubleOrNull()
         val tasaDouble = tasaCambio.toDoubleOrNull()
@@ -150,6 +160,7 @@ fun PublishOfferScreen(
             montoConvertido = cantDouble * tasaDouble
         }
     }
+
     fun publicarOferta() {
         val cantDouble = cantidad.toDoubleOrNull()
         val tasaDouble = tasaCambio.toDoubleOrNull()
@@ -186,6 +197,7 @@ fun PublishOfferScreen(
             }
         }
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -196,7 +208,7 @@ fun PublishOfferScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorMarron)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownTheme)
             )
         }
     ) { innerPadding ->
@@ -204,7 +216,7 @@ fun PublishOfferScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(ColorBlancoFondo)
+                .background(LightBackground)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -221,14 +233,17 @@ fun PublishOfferScreen(
                     Text(
                         text = "Detalles de la Oferta",
                         style = MaterialTheme.typography.titleLarge,
-                        color = ColorMarron,
+                        color = BrownTheme,
                         fontWeight = FontWeight.Bold
                     )
+
                     if (isLoading) {
                         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = ColorMarron)
+                            CircularProgressIndicator(color = BrownTheme)
                         }
                     }
+
+                    // --- Dropdown Tengo ---
                     Box(modifier = Modifier.fillMaxWidth()) {
                         ExposedDropdownMenuBox(
                             expanded = expandedTengo,
@@ -242,10 +257,10 @@ fun PublishOfferScreen(
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTengo) },
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedBorderColor = Color.LightGray,
-                                    focusedBorderColor = ColorMarron,
+                                    focusedBorderColor = BrownTheme,
                                     unfocusedContainerColor = Color.White,
                                     focusedContainerColor = Color.White,
-                                    cursorColor = ColorMarron
+                                    cursorColor = BrownTheme
                                 ),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
@@ -268,6 +283,8 @@ fun PublishOfferScreen(
                             }
                         }
                     }
+
+                    // --- Dropdown Quiero ---
                     Box(modifier = Modifier.fillMaxWidth()) {
                         ExposedDropdownMenuBox(
                             expanded = expandedQuiero,
@@ -281,10 +298,10 @@ fun PublishOfferScreen(
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedQuiero) },
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedBorderColor = Color.LightGray,
-                                    focusedBorderColor = ColorMarron,
+                                    focusedBorderColor = BrownTheme,
                                     unfocusedContainerColor = Color.White,
                                     focusedContainerColor = Color.White,
-                                    cursorColor = ColorMarron
+                                    cursorColor = BrownTheme
                                 ),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier
@@ -307,6 +324,8 @@ fun PublishOfferScreen(
                             }
                         }
                     }
+
+                    // --- Input Cantidad ---
                     OutlinedTextField(
                         value = cantidad,
                         onValueChange = { cantidad = it },
@@ -314,14 +333,16 @@ fun PublishOfferScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color.LightGray,
-                            focusedBorderColor = ColorMarron,
+                            focusedBorderColor = BrownTheme,
                             unfocusedContainerColor = Color.White,
                             focusedContainerColor = Color.White,
-                            cursorColor = ColorMarron
+                            cursorColor = BrownTheme
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    // --- Input Tasa Cambio ---
                     OutlinedTextField(
                         value = tasaCambio,
                         onValueChange = { tasaCambio = it },
@@ -329,18 +350,20 @@ fun PublishOfferScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color.LightGray,
-                            focusedBorderColor = ColorMarron,
+                            focusedBorderColor = BrownTheme,
                             unfocusedContainerColor = Color.White,
                             focusedContainerColor = Color.White,
-                            cursorColor = ColorMarron
+                            cursorColor = BrownTheme
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    // --- Vista previa conversión ---
                     montoConvertido?.let { convertido ->
                         val formato = DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.US))
                         Surface(
-                            color = ColorGrisFondo,
+                            color = AlertBackground,
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -351,7 +374,7 @@ fun PublishOfferScreen(
                                 Text(
                                     text = "Monto convertido (${quieroCurrency}): ${formato.format(convertido)}",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = ColorMarron,
+                                    color = BrownTheme,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 ultimaActualizacion?.let { fecha ->
@@ -364,9 +387,12 @@ fun PublishOfferScreen(
                             }
                         }
                     }
+
+                    // --- Mensajes de error/éxito ---
                     errorMessage?.let {
-                        Text(text = it, color = MaterialTheme.colorScheme.error)
+                        Text(text = it, color = AlertRed, modifier = Modifier.padding(top = 4.dp))
                     }
+
                     successMessage?.let {
                         Surface(
                             color = ColorVerdeTag.copy(alpha = 0.18f),
@@ -381,7 +407,10 @@ fun PublishOfferScreen(
                             )
                         }
                     }
+
                     Spacer(modifier = Modifier.height(8.dp))
+
+                    // --- Botonera inferior ---
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -395,7 +424,7 @@ fun PublishOfferScreen(
                         Button(
                             onClick = { publicarOferta() },
                             enabled = !isLoading && !isPublishing && currencyOptions.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(containerColor = ColorMarron),
+                            colors = ButtonDefaults.buttonColors(containerColor = BrownTheme),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
