@@ -91,6 +91,30 @@ data class TransaccionRequest(
     @SerializedName("clienteCompradorId") val clienteCompradorId: Int
 )
 
+// --- DIVISAS ---
+
+data class TipoCambioResponse(
+    val monedaIn: String,
+    val monedaOut: String,
+    val tipoCambio: Double,
+    val fechaActualizacion: String
+)
+
+data class CambioMonedaRequest(
+    val monedaIn: String,
+    val monedaOut: String,
+    val monto: Double
+)
+
+data class CambioMonedaResponse(
+    val monedaIn: String,
+    val monedaOut: String,
+    val tipoCambio: Double,
+    val monto: Double,
+    val montoConvertido: Double,
+    val fechaActualizacion: String
+)
+
 data class TransaccionResponse(
     @SerializedName("id") val id: Int,
     @SerializedName("ofertaId") val ofertaId: Int,

@@ -2,7 +2,8 @@ package com.example.smallchangedam.data
 
 import retrofit2.http.*
 import retrofit2.Response
-
+import retrofit2.http.GET
+import okhttp3.ResponseBody
 interface ApiService {
 
     // --- AUTENTICACIÓN ---
