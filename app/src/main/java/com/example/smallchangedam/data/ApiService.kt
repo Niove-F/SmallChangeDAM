@@ -6,6 +6,20 @@ import retrofit2.http.GET
 import okhttp3.ResponseBody
 interface ApiService {
 
+    @GET("api/divisas/monedas") // Asegúrate de apuntar a la ruta exacta del controlador
+    suspend fun obtenerMonedas(): Map<String, String>
+
+    @GET("api/divisas/tipo-cambio")
+    suspend fun obtenerTipoCambio(
+        @Query("monedaOrigen") monedaOrigen: String,
+        @Query("monedaDestino") monedaDestino: String
+    ): TipoCambioResponse // Crea o usa tu DTO equivalente a TipoCambioResponseDTO
+
+    @POST("api/divisas/convertir")
+    suspend fun convertirMoneda(
+        @Body request: CambioMonedaRequest
+    ): CambioMonedaResponse // Crea o usa tu DTO equivalente a CambioMonedaResponseDTO
+
     // --- AUTENTICACIÓN ---
     @POST("api/auth/registro")
     suspend fun registrarUsuario(@Body request: RegistroRequest): Response<AuthResponse>

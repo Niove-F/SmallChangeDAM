@@ -89,31 +89,22 @@ fun PublishOfferScreen(
         isLoading = true
         errorMessage = null
         try {
-            val responseBody = RetrofitClient.apiService.obtenerMonedas()
-            val jsonString = responseBody.string()
-            Log.d("API_DIVISAS", "Respuesta exacta recibida: $jsonString")
-            if (jsonString.trim().isNotEmpty()) {
-                val gson = Gson()
-                val listaMonedas: List<String> = if (jsonString.trim().startsWith("{")) {
-                    val tipoMapa = object : TypeToken<Map<String, String>>() {}.type
-                    val mapa: Map<String, String> = gson.fromJson(jsonString, tipoMapa)
-                    mapa.keys.toList()
-                } else {
-                    val tipoLista = object : TypeToken<List<String>>() {}.type
-                    gson.fromJson(jsonString, tipoLista)
-                }
-                if (listaMonedas.isNotEmpty()) {
-                    val listaOrdenada = listaMonedas.sorted()
-                    currencyOptions = listaOrdenada
-                    if (listaOrdenada.contains("USD")) tengoCurrency = "USD"
-                    if (listaOrdenada.contains("EUR")) quieroCurrency = "EUR"
-                    if (tengoCurrency.isEmpty()) tengoCurrency = listaOrdenada.first()
-                    if (quieroCurrency.isEmpty() && listaOrdenada.size > 1) quieroCurrency = listaOrdenada[1]
-                } else {
-                    errorMessage = "La API no retornó ninguna divisa disponible."
-                }
+            // Al estar tipado como Map<String, String>, Retrofit lo convierte automáticamente
+            val mapaMonedas = RetrofitClient.apiService.obtenerMonedas()
+
+            if (mapaMonedas.isNotEmpty()) {
+                // Obtenemos las llaves (las siglas de las monedas) y las ordenamos
+                val listaOrdenada = mapaMonedas.keys.toList().sorted()
+                currencyOptions = listaOrdenada
+
+                // Inicializamos selecciones por defecto si existen
+                if (listaOrdenada.contains("USD")) tengoCurrency = "USD"
+                if (listaOrdenada.contains("EUR")) quieroCurrency = "EUR"
+
+                if (tengoCurrency.isEmpty()) tengoCurrency = listaOrdenada.first()
+                if (quieroCurrency.isEmpty() && listaOrdenada.size > 1) quieroCurrency = listaOrdenada[1]
             } else {
-                errorMessage = "El servidor envió una respuesta de catálogo vacía."
+                errorMessage = "La API no retornó ninguna divisa disponible."
             }
         } catch (e: Exception) {
             errorMessage = "Error al cargar las divisas de la API: ${e.message}"
