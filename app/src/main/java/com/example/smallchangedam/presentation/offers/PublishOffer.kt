@@ -1,4 +1,4 @@
-package com.example.smallchangedam.ui.screens
+package com.example.smallchangedam.presentation.offers
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import com.example.smallchangedam.data.CambioMonedaRequest
 import com.example.smallchangedam.data.OfertaRequest
 import com.example.smallchangedam.data.RetrofitClient
-import com.google.gson.Gson
+import com.example.smallchangedam.data.SessionManager
 import com.google.gson.reflect.TypeToken
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -177,7 +177,7 @@ fun PublishOfferScreen(
                     cantidad = cantDouble,
                     tipoCambio = tasaDouble
                 )
-                RetrofitClient.apiService.crearOferta(request)
+                RetrofitClient.apiService.crearOferta(request, SessionManager.userId ?: 0)
                 successMessage = "¡Oferta publicada con éxito!"
                 onOfferPublished()
             } catch (e: Exception) {

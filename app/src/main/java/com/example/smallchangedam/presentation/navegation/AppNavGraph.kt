@@ -14,7 +14,7 @@ import com.example.smallchangedam.presentation.auth.RegisterScreen
 import com.example.smallchangedam.presentation.auth.VerificationScreen
 import com.example.smallchangedam.presentation.home.HomeScreen
 import com.example.smallchangedam.presentation.offers.DetallesOfertaOtroUsuario
-import com.example.smallchangedam.ui.screens.PublishOfferScreen
+import com.example.smallchangedam.presentation.offers.PublishOfferScreen
 import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
 import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 import com.example.smallchangedam.presentation.perfil.ProfileScreen
