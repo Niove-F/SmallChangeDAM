@@ -115,90 +115,76 @@ Box(modifier = Modifier.fillMaxSize()) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorMarron)
             )
-        },
-        bottomBar = {
-            BottomBarSeccion(navController = navController)
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                "f8" -> .fillMaxSize()
+                .fillMaxSize()
                 .padding(paddingValues)
                 .background(ColorBlancoFondo)
         ) {
+            // 1. Sección de Filtros (Fondo Gris)
             FiltrosSeccion()
 
+            // 2. Fila para "Ordenar por" alineada a la derecha
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(ColorBlancoFondo)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-// 1. Sección de Filtros (Fondo Gris)
-                FiltrosSeccion()
+                Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
+            }
 
-                // Ordenar por...
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
+            // 3. Manejo de Estados de la Lista de Ofertas
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = ColorMarron)
+                    }
                 }
+                errorMessage != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(16.dp))
+                    }
+                }
+                ofertasTotales.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "Aún no hay ofertas publicadas.", color = Color.Gray)
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f), // Reemplazamos fillMaxSize por weight para que no empuje el Spacer fuera de la vista de forma incorrecta
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val ofertasMostrar = ofertasTotales.take(itemsVisibles)
 
-                // Manejo de Estados de la Lista de Ofertas
-                when {
-                    isLoading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = ColorMarron)
+                        items(ofertasMostrar) { oferta ->
+                            TarjetaOferta(oferta, navController)
                         }
-                    }
-                    errorMessage != null -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(16.dp))
-                        }
-                    }
-                    ofertasTotales.isEmpty() -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = "Aún no hay ofertas publicadas.", color = Color.Gray)
-                        }
-                    }
-                    else -> {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            val ofertasMostrar = ofertasTotales.take(itemsVisibles)
 
-                            items(ofertasMostrar) { oferta ->
-                                TarjetaOferta(oferta, navController)
-                            }
-                            
-                            // Indicador de carga cuando hace scroll hacia abajo
-                            if (itemsVisibles < ofertasTotales.size) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(8.dp), 
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ColorMarron)
-                                    }
+                        // Indicador de carga cuando hace scroll hacia abajo
+                        if (itemsVisibles < ofertasTotales.size) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ColorMarron)
                                 }
                             }
                         }
                     }
                 }
-                    }
-                }
-                Spacer(modifier = Modifier.height(80.dp))
             }
+
+            Spacer(modifier = Modifier.height(80.dp))
         }
+    }
         CustomBottomBar(
             navController = navController,
             modifier = Modifier.align(Alignment.BottomCenter) // Se ancla al fondo
@@ -304,16 +290,29 @@ fun TarjetaOferta(oferta: OfertaUI, navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { navController.navigate( "perfil/${oferta.usuario}/${oferta.calificacion}" ) } ) {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp))
+                    IconButton(onClick = { navController.navigate("perfil/${oferta.usuario}/${oferta.calificacion}") }) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = oferta.usuario, fontWeight = FontWeight.Bold, fontSize = 16.sp, )
+                    Text(text = oferta.usuario, fontWeight = FontWeight.Bold, fontSize = 16.sp,)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(20.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = oferta.calificacion.toString(), fontWeight = FontWeight.Bold, color = Color(0xFFFFC107))
+                    Text(
+                        text = oferta.calificacion.toString(),
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFC107)
+                    )
                 }
             }
 
@@ -362,31 +361,6 @@ fun TarjetaOferta(oferta: OfertaUI, navController: NavController) {
                 ) {
                     Text(text = "Intercambiar", color = Color.White, fontSize = 14.sp)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun BottomBarSeccion(navController: NavController) {
-    Surface(
-        color = ColorMarron,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(onClick = { navController.navigate("tipoCambio") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
-                Text("Tipo de Cambio", color = Color.Black, fontSize = 12.sp)
-            }
-            Button(onClick = { navController.navigate("misOfertas") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
-                Text("Mis Ofertas", color = Color.Black, fontSize = 12.sp)
-            }
-            Button(onClick = { navController.navigate("publicarOferta") }, colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
-                Text("Publicar Oferta", color = Color.Black, fontSize = 12.sp)
             }
         }
     }
