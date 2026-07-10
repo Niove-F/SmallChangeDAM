@@ -1,5 +1,6 @@
 package com.example.smallchangedam.presentation.offers
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,11 +23,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.smallchangedam.data.ApiService
 import kotlinx.coroutines.launch
 
 // Importa tus clases de datos y tu cliente Retrofit (Asegúrate de que estas rutas coincidan con tu proyecto)
 import com.example.smallchangedam.data.OfertaRequest
 import com.example.smallchangedam.data.RetrofitClient
+import com.example.smallchangedam.data.SessionManager
 
 val BrownTheme = Color(0xFFA67C52)
 val LightBackground = Color(0xFFFAFAFA)
@@ -247,11 +250,18 @@ fun PublishOfferScreen(navController: NavController) {
                                     tipoCambio = tasa.toDoubleOrNull() ?: 0.0
                                 )
 
-                                // Llamada HTTP
-                                val response = RetrofitClient.apiService.crearOferta(request)
+                                val miClienteId = SessionManager.userId ?: -1
+
+                                if (miClienteId == -1) {
+                                    errorMessage = "Error: Sesión de usuario no válida."
+                                    return@launch
+                                }
+
+                                // Tu llamada a Retrofit súper limpia y sincronizada con C#
+                                val response = RetrofitClient.apiService.crearOferta(request, miClienteId)
 
                                 navController.navigate("home") {
-                                    popUpTo("home") { inclusive = true } // Limpiar historial
+                                    popUpTo("home") { inclusive = true }
                                 }
 
                             } catch (e: Exception) {

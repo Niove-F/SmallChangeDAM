@@ -19,6 +19,7 @@ import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
 import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 import com.example.smallchangedam.presentation.perfil.ProfileScreen
 import androidx.navigation.navArgument
+import com.example.smallchangedam.data.RetrofitClient
 
 @Composable
 fun AppNavGraph() {
@@ -77,7 +78,15 @@ fun AppNavGraph() {
             arguments = listOf(navArgument("ofertaId") { type = NavType.IntType })
         ) { backStackEntry ->
             val ofertaId = backStackEntry.arguments?.getInt("ofertaId") ?: 0
-            DetallesOfertaOtroUsuario(navController = navController, ofertaId = ofertaId)
+
+            // Obtenemos la instancia de tu servicio de Retrofit
+            val apiService = RetrofitClient.apiService
+
+            DetallesOfertaOtroUsuario(
+                navController = navController,
+                ofertaId = ofertaId,
+                apiService = apiService // <--- Pasamos el parámetro que faltaba
+            )
         }
 
         composable("adminPanel") {

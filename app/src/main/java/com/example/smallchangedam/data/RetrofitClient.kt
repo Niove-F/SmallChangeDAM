@@ -12,6 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory
  */
 object SessionManager {
     var authToken: String? = null
+    var userId: Int? = null // <-- ¡Agrega esto! Así cualquier pantalla puede saber quién está logueado
 }
 
 object RetrofitClient {
