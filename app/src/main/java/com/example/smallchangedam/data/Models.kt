@@ -75,6 +75,30 @@ data class TransaccionRequest(
     val estado: String
 )
 
+// --- DIVISAS ---
+
+data class TipoCambioResponse(
+    val monedaIn: String,
+    val monedaOut: String,
+    val tipoCambio: Double,
+    val fechaActualizacion: String
+)
+
+data class CambioMonedaRequest(
+    val monedaIn: String,
+    val monedaOut: String,
+    val monto: Double
+)
+
+data class CambioMonedaResponse(
+    val monedaIn: String,
+    val monedaOut: String,
+    val tipoCambio: Double,
+    val monto: Double,
+    val montoConvertido: Double,
+    val fechaActualizacion: String
+)
+
 data class TransaccionResponse(
     val id: Int,
     @SerializedName("OfertaId") val ofertaId: Int,

@@ -1,317 +1,415 @@
-package com.example.smallchangedam.presentation.offers
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+﻿package com.example.smallchangedam.ui.screens
+import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import kotlinx.coroutines.launch
-
-// Importa tus clases de datos y tu cliente Retrofit (Asegúrate de que estas rutas coincidan con tu proyecto)
+import com.example.smallchangedam.data.CambioMonedaRequest
 import com.example.smallchangedam.data.OfertaRequest
 import com.example.smallchangedam.data.RetrofitClient
-
-val BrownTheme = Color(0xFFA67C52)
-val LightBackground = Color(0xFFFAFAFA)
-val AlertBackground = Color(0xFFF7F2F2)
-val AlertRed = Color(0xFFB71C1C)
-
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
+private val ColorMarron = Color(0xFFB08968)
+private val ColorGrisFondo = Color(0xFFE0E0E0)
+private val ColorBlancoFondo = Color(0xFFF8F9FA)
+private val ColorVerdeTag = Color(0xFF72C075)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PublishOfferScreen(navController: NavController) {
-    var tengoExpanded by remember { mutableStateOf(false) }
-    var quieroExpanded by remember { mutableStateOf(false) }
-    var tengoCurrency by remember { mutableStateOf("USD - Dolares") }
-    var quieroCurrency by remember { mutableStateOf("EUR - Euro") }
+fun PublishOfferScreen(
+    onNavigateBack: () -> Unit,
+    onOfferPublished: () -> Unit
+) {
+    var tengoCurrency by remember { mutableStateOf("") }
+    var quieroCurrency by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("1000.00") }
-    var tasa by remember { mutableStateOf("1.17") }
-
-    // CONEXIÓN API ---
+    var tasaCambio by remember { mutableStateOf("1.17") }
+    var montoConvertido by remember { mutableStateOf<Double?>(null) }
+    var ultimaActualizacion by remember { mutableStateOf<String?>(null) }
+    var currencyOptions by remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
+    var isPublishing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    // Scope para lanzar la petición de red en segundo plano
-    val coroutineScope = rememberCoroutineScope()
-
-    val currencyOptions = listOf("USD - Dolares", "EUR - Euro", "PEN - Soles")
-    val tasaValue = tasa.toDoubleOrNull() ?: 0.0
-    val isRateLow = tasaValue < 1.5
-    // El botón solo se habilita si los datos son válidos y NO está cargando
-    val isButtonEnabled = !isRateLow && tasa.isNotEmpty() && cantidad.isNotEmpty() && !isLoading
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(BrownTheme)
-                .padding(start = 16.dp, top = 40.dp, bottom = 10.dp, end = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Publicar nueva oferta",
-                color = Color.White,
-                fontSize = 20.sp,
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var expandedTengo by remember { mutableStateOf(false) }
+    var expandedQuiero by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        isLoading = true
+        errorMessage = null
+        try {
+            val responseBody = RetrofitClient.apiService.obtenerMonedas()
+            val jsonString = responseBody.string()
+            Log.d("API_DIVISAS", "Respuesta exacta recibida: $jsonString")
+            if (jsonString.trim().isNotEmpty()) {
+                val gson = Gson()
+                val listaMonedas: List<String> = if (jsonString.trim().startsWith("{")) {
+                    val tipoMapa = object : TypeToken<Map<String, String>>() {}.type
+                    val mapa: Map<String, String> = gson.fromJson(jsonString, tipoMapa)
+                    mapa.keys.toList()
+                } else {
+                    val tipoLista = object : TypeToken<List<String>>() {}.type
+                    gson.fromJson(jsonString, tipoLista)
+                }
+                if (listaMonedas.isNotEmpty()) {
+                    val listaOrdenada = listaMonedas.sorted()
+                    currencyOptions = listaOrdenada
+                    if (listaOrdenada.contains("USD")) tengoCurrency = "USD"
+                    if (listaOrdenada.contains("EUR")) quieroCurrency = "EUR"
+                    if (tengoCurrency.isEmpty()) tengoCurrency = listaOrdenada.first()
+                    if (quieroCurrency.isEmpty() && listaOrdenada.size > 1) quieroCurrency = listaOrdenada[1]
+                } else {
+                    errorMessage = "La API no retornó ninguna divisa disponible."
+                }
+            } else {
+                errorMessage = "El servidor envió una respuesta de catálogo vacía."
+            }
+        } catch (e: Exception) {
+            errorMessage = "Error al cargar las divisas de la API: ${e.message}"
+            Log.e("API_DIVISAS", "Fallo al procesar las monedas", e)
+        } finally {
+            isLoading = false
+        }
+    }
+    LaunchedEffect(tengoCurrency, quieroCurrency) {
+        if (tengoCurrency.isBlank() || quieroCurrency.isBlank() || tengoCurrency == quieroCurrency) return@LaunchedEffect
+        try {
+            val tipoCambioResp = RetrofitClient.apiService.obtenerTipoCambio(
+                monedaOrigen = tengoCurrency,
+                monedaDestino = quieroCurrency
             )
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color.White,
-                modifier = Modifier.size(42.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Perfil",
-                    modifier = Modifier.padding(8.dp)
+            tasaCambio = tipoCambioResp.tipoCambio.toString()
+            ultimaActualizacion = tipoCambioResp.fechaActualizacion
+            val cantDouble = cantidad.toDoubleOrNull() ?: 0.0
+            if (cantDouble > 0.0) {
+                val cambioResp = RetrofitClient.apiService.convertirMoneda(
+                    CambioMonedaRequest(
+                        monedaIn = tengoCurrency,
+                        monedaOut = quieroCurrency,
+                        monto = cantDouble
+                    )
                 )
+                montoConvertido = cambioResp.montoConvertido
+            } else {
+                montoConvertido = null
+            }
+        } catch (e: Exception) {
+            Log.e("API_DIVISAS", "Error al obtener tipo de cambio o conversión: ${e.message}", e)
+            errorMessage = "No fue posible obtener la tasa de cambio: ${e.message}"
+        }
+    }
+    LaunchedEffect(cantidad, tasaCambio) {
+        val cantDouble = cantidad.toDoubleOrNull()
+        val tasaDouble = tasaCambio.toDoubleOrNull()
+        if (cantDouble != null && tasaDouble != null) {
+            montoConvertido = cantDouble * tasaDouble
+        }
+    }
+    fun publicarOferta() {
+        val cantDouble = cantidad.toDoubleOrNull()
+        val tasaDouble = tasaCambio.toDoubleOrNull()
+        if (cantDouble == null || cantDouble <= 0.0) {
+            errorMessage = "La cantidad a intercambiar debe ser mayor a cero."
+            return
+        }
+        if (tasaDouble == null || tasaDouble <= 0.0) {
+            errorMessage = "La tasa de cambio debe ser mayor a cero."
+            return
+        }
+        if (tengoCurrency == quieroCurrency) {
+            errorMessage = "La moneda de origen y destino no pueden ser iguales."
+            return
+        }
+        scope.launch {
+            isPublishing = true
+            errorMessage = null
+            try {
+                val request = OfertaRequest(
+                    monedaAEnviar = tengoCurrency,
+                    monedaARecibir = quieroCurrency,
+                    cantidad = cantDouble,
+                    tipoCambio = tasaDouble
+                )
+                RetrofitClient.apiService.crearOferta(request)
+                successMessage = "¡Oferta publicada con éxito!"
+                onOfferPublished()
+            } catch (e: Exception) {
+                errorMessage = "Error al publicar la oferta: ${e.message}"
+                Log.e("PUBLISH_OFFER", "Error en POST api/ofertas", e)
+            } finally {
+                isPublishing = false
             }
         }
-
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Volver | Inicio > Mis ofertas > Publicar...",
-                fontSize = 12.sp,
-                color = Color.DarkGray,
-                modifier = Modifier.padding(bottom = 16.dp).clickable { navController.popBackStack() }
-            )
-
-            Text(
-                text = "Detalles de la Oferta",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
-            Text("Tengo", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-            Spacer(modifier = Modifier.height(4.dp))
-            ExposedDropdownMenuBox(
-                expanded = tengoExpanded,
-                onExpandedChange = { tengoExpanded = !tengoExpanded }
-            ) {
-                OutlinedTextField(
-                    value = tengoCurrency,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tengoExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.LightGray
+    }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Publicar nueva oferta",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
                     )
-                )
-                ExposedDropdownMenu(
-                    expanded = tengoExpanded,
-                    onDismissRequest = { tengoExpanded = false }
-                ) {
-                    currencyOptions.forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption) },
-                            onClick = {
-                                tengoCurrency = selectionOption
-                                tengoExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Quiero", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-            Spacer(modifier = Modifier.height(4.dp))
-            ExposedDropdownMenuBox(
-                expanded = quieroExpanded,
-                onExpandedChange = { quieroExpanded = !quieroExpanded }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorMarron)
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(ColorBlancoFondo)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                OutlinedTextField(
-                    value = quieroCurrency,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = quieroExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.LightGray
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Detalles de la Oferta",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = ColorMarron,
+                        fontWeight = FontWeight.Bold
                     )
-                )
-                ExposedDropdownMenu(
-                    expanded = quieroExpanded,
-                    onDismissRequest = { quieroExpanded = false }
-                ) {
-                    currencyOptions.forEach { selectionOption ->
-                        DropdownMenuItem(
-                            text = { Text(selectionOption) },
-                            onClick = {
-                                quieroCurrency = selectionOption
-                                quieroExpanded = false
-                            }
-                        )
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = ColorMarron)
+                        }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Cantidad a intercambiar", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-            Spacer(modifier = Modifier.height(4.dp))
-            OutlinedTextField(
-                value = cantidad,
-                onValueChange = { cantidad = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon = { Text(tengoCurrency.split(" ")[0], color = Color.DarkGray, modifier = Modifier.padding(end = 16.dp)) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.LightGray)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Tasa de cambio", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-            Spacer(modifier = Modifier.height(4.dp))
-            OutlinedTextField(
-                value = tasa,
-                onValueChange = { tasa = it },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon = { Text("${quieroCurrency.split(" ")[0]}/${tengoCurrency.split(" ")[0]}", color = Color.DarkGray, modifier = Modifier.padding(end = 16.dp)) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.LightGray)
-            )
-
-            if (isRateLow && tasa.isNotEmpty()) {
-                Text(
-                    text = "Esta tasa es muy baja",
-                    color = Color.DarkGray,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 4.dp, start = 8.dp)
-                )
-            }
-
-            // MOSTRAR MENSAJE DE ERROR DE LA API ---
-            errorMessage?.let { error ->
-                Text(
-                    text = error,
-                    color = Color.Red,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    onClick = { navController.popBackStack() },
-                    enabled = !isLoading // Deshabilitar si está cargando
-                ) {
-                    Text("Cancelar", color = if(isLoading) Color.LightGray else Color.DarkGray)
-                }
-
-                Button(
-                    // Conexion API
-                    onClick = {
-                        coroutineScope.launch {
-                            isLoading = true
-                            errorMessage = null
-
-                            try {
-                                val monedaOrigen = tengoCurrency.split(" ")[0]
-                                val monedaDestino = quieroCurrency.split(" ")[0]
-
-                                val request = OfertaRequest(
-                                    monedaAEnviar = monedaOrigen,
-                                    monedaARecibir = monedaDestino,
-                                    cantidad = cantidad.toDoubleOrNull() ?: 0.0,
-                                    tipoCambio = tasa.toDoubleOrNull() ?: 0.0
-                                )
-
-                                // Llamada HTTP
-                                val response = RetrofitClient.apiService.crearOferta(request)
-
-                                navController.navigate("home") {
-                                    popUpTo("home") { inclusive = true } // Limpiar historial
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        ExposedDropdownMenuBox(
+                            expanded = expandedTengo,
+                            onExpandedChange = { if (currencyOptions.isNotEmpty()) expandedTengo = !expandedTengo }
+                        ) {
+                            OutlinedTextField(
+                                value = if (isLoading) "Cargando divisas..." else tengoCurrency,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Tengo") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTengo) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedBorderColor = ColorMarron,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    cursorColor = ColorMarron
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                                    .fillMaxWidth()
+                            )
+                            DropdownMenu(
+                                expanded = expandedTengo,
+                                onDismissRequest = { expandedTengo = false }
+                            ) {
+                                currencyOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option) },
+                                        onClick = {
+                                            tengoCurrency = option
+                                            expandedTengo = false
+                                        }
+                                    )
                                 }
-
-                            } catch (e: Exception) {
-                                errorMessage = "Error de conexión: ${e.message}"
-                            } finally {
-                                isLoading = false
                             }
                         }
-                    },
-                    enabled = isButtonEnabled,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = BrownTheme,
-                        disabledContainerColor = Color.LightGray
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 16.dp)
-                        .height(48.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Publicar Oferta", color = if (isButtonEnabled) Color.White else Color.DarkGray)
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(AlertBackground)
-                    .border(width = 0.dp, color = Color.Transparent)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .height(64.dp)
-                        .background(AlertRed)
-                )
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Existen (1) ofertas similares a la tuya.",
-                        color = AlertRed,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        ExposedDropdownMenuBox(
+                            expanded = expandedQuiero,
+                            onExpandedChange = { if (currencyOptions.isNotEmpty()) expandedQuiero = !expandedQuiero }
+                        ) {
+                            OutlinedTextField(
+                                value = if (isLoading) "Cargando divisas..." else quieroCurrency,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Quiero") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedQuiero) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedBorderColor = ColorMarron,
+                                    unfocusedContainerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    cursorColor = ColorMarron
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true)
+                                    .fillMaxWidth()
+                            )
+                            DropdownMenu(
+                                expanded = expandedQuiero,
+                                onDismissRequest = { expandedQuiero = false }
+                            ) {
+                                currencyOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option) },
+                                        onClick = {
+                                            quieroCurrency = option
+                                            expandedQuiero = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = cantidad,
+                        onValueChange = { cantidad = it },
+                        label = { Text("Cantidad a intercambiar") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color.LightGray,
+                            focusedBorderColor = ColorMarron,
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White,
+                            cursorColor = ColorMarron
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Presiona aquí para verlas",
-                        color = Color.Gray,
-                        fontSize = 14.sp,
-                        modifier = Modifier.clickable { /*navController.navigate("similar")*/}
+                    OutlinedTextField(
+                        value = tasaCambio,
+                        onValueChange = { tasaCambio = it },
+                        label = { Text("Tasa de cambio") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = Color.LightGray,
+                            focusedBorderColor = ColorMarron,
+                            unfocusedContainerColor = Color.White,
+                            focusedContainerColor = Color.White,
+                            cursorColor = ColorMarron
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    montoConvertido?.let { convertido ->
+                        val formato = DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.US))
+                        Surface(
+                            color = ColorGrisFondo,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Monto convertido (${quieroCurrency}): ${formato.format(convertido)}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = ColorMarron,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                ultimaActualizacion?.let { fecha ->
+                                    Text(
+                                        text = "Última actualización: $fecha",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    errorMessage?.let {
+                        Text(text = it, color = MaterialTheme.colorScheme.error)
+                    }
+                    successMessage?.let {
+                        Surface(
+                            color = ColorVerdeTag.copy(alpha = 0.18f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = it,
+                                color = ColorVerdeTag,
+                                modifier = Modifier.padding(12.dp),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Cancelar")
+                        }
+                        Button(
+                            onClick = { publicarOferta() },
+                            enabled = !isLoading && !isPublishing && currencyOptions.isNotEmpty(),
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorMarron),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (isPublishing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                            } else {
+                                Text("Publicar Oferta", color = Color.White)
+                            }
+                        }
+                    }
                 }
             }
         }

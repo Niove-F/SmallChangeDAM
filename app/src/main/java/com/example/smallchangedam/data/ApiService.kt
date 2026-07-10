@@ -2,7 +2,8 @@ package com.example.smallchangedam.data
 
 import retrofit2.http.*
 import retrofit2.Response
-
+import retrofit2.http.GET
+import okhttp3.ResponseBody
 interface ApiService {
 
     // --- AUTENTICACIÓN ---
@@ -44,4 +45,17 @@ interface ApiService {
 
     @POST("api/transacciones")
     suspend fun crearTransaccion(@Body request: TransaccionRequest): TransaccionResponse
+
+    // --- DIVISAS ---
+    @GET("api/divisas/monedas")
+    suspend fun obtenerMonedas(): ResponseBody
+
+    @GET("api/divisas/tipo-cambio")
+    suspend fun obtenerTipoCambio(
+        @Query("monedaOrigen") monedaOrigen: String,
+        @Query("monedaDestino") monedaDestino: String
+    ): TipoCambioResponse
+
+    @POST("api/divisas/convertir")
+    suspend fun convertirMoneda(@Body request: CambioMonedaRequest): CambioMonedaResponse
 }
