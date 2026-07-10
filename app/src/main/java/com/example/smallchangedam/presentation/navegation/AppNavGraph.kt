@@ -19,6 +19,7 @@ import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
 import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 import com.example.smallchangedam.presentation.perfil.ProfileScreen
 import com.example.smallchangedam.data.RetrofitClient
+import com.example.smallchangedam.presentation.transactions.PaymentGatewayMockupScreen
 
 @Composable
 fun AppNavGraph() {
@@ -123,6 +124,22 @@ fun AppNavGraph() {
 
         composable("configUser"){
             ConfiguracionScreen(navController)
+        }
+
+        composable(
+            route = "payment_gateway/{monto}",
+            arguments = listOf(navArgument("monto") { type = NavType.FloatType })
+        ) { backStackEntry ->
+            val monto = backStackEntry.arguments?.getFloat("monto")?.toDouble() ?: 0.0
+
+            PaymentGatewayMockupScreen(
+                navController = navController,
+                montoAComprar = monto,
+                onPaymentSuccess = {
+                    // Qué hacer cuando el pago sea exitoso (ej: ir a pantalla de éxito)
+                    navController.navigate("success_screen")
+                }
+            )
         }
     }
 }

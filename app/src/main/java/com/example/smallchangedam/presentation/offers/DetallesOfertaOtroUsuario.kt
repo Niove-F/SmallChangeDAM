@@ -189,12 +189,12 @@ fun DetallesOfertaOtroUsuario(
                         Spacer(modifier = Modifier.height(32.dp))
 
                         // Acción para iniciar la transacción
+                        var montoSeleccionado = 6769.0
                         Button(
                             onClick = {
+                                montoSeleccionado = totalRecibido
                                 // Aquí podrías navegar a una pantalla de confirmación o ejecutar el endpoint `crearTransaccion`
-                                navController.navigate("home") {
-                                    popUpTo("home") { inclusive = true }
-                                }
+                                navController.navigate("payment_gateway/$montoSeleccionado")
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
