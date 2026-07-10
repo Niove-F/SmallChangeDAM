@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.smallchangedam.presentation.components.CustomBottomBar
 import com.example.smallchangedam.data.OfertaResponse
 import com.example.smallchangedam.data.RetrofitClient
 import kotlinx.coroutines.launch
@@ -91,6 +92,7 @@ fun HomeScreen(navController: NavController) {
         }
     }
 
+Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -104,7 +106,11 @@ fun HomeScreen(navController: NavController) {
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate("configUser") }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Perfil", tint = Color.White)
+                        Icon(
+                            Icons.Default.AccountCircle, 
+                            contentDescription = "Perfil", 
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = ColorMarron)
@@ -116,7 +122,7 @@ fun HomeScreen(navController: NavController) {
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                "f8" -> .fillMaxSize()
                 .padding(paddingValues)
                 .background(ColorBlancoFondo)
         ) {
@@ -124,53 +130,79 @@ fun HomeScreen(navController: NavController) {
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(ColorBlancoFondo)
             ) {
-                Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
-            }
-            when {
-                isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = ColorMarron)
-                    }
-                }
-                errorMessage != null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(16.dp))
-                    }
-                }
-                ofertasTotales.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "Aún no hay ofertas publicadas.", color = Color.Gray)
-                    }
-                }
-                else -> {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        val ofertasMostrar = ofertasTotales.take(itemsVisibles)
+// 1. Sección de Filtros (Fondo Gris)
+                FiltrosSeccion()
 
-                        items(ofertasMostrar) { oferta ->
-                            TarjetaOferta(oferta, navController)
+                // Ordenar por...
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
+                }
+
+                // Manejo de Estados de la Lista de Ofertas
+                when {
+                    isLoading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = ColorMarron)
                         }
-                        // Indicador de carga cuando hace scroll hacia abajo
-                        if (itemsVisibles < ofertasTotales.size) {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ColorMarron)
+                    }
+                    errorMessage != null -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(16.dp))
+                        }
+                    }
+                    ofertasTotales.isEmpty() -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = "Aún no hay ofertas publicadas.", color = Color.Gray)
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val ofertasMostrar = ofertasTotales.take(itemsVisibles)
+
+                            items(ofertasMostrar) { oferta ->
+                                TarjetaOferta(oferta, navController)
+                            }
+                            
+                            // Indicador de carga cuando hace scroll hacia abajo
+                            if (itemsVisibles < ofertasTotales.size) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(8.dp), 
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ColorMarron)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                    }
+                }
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
+        CustomBottomBar(
+            navController = navController,
+            modifier = Modifier.align(Alignment.BottomCenter) // Se ancla al fondo
+        )
     }
 }
 fun calcularTiempoTranscurrido(fechaIso: String): String {
