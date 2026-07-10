@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.smallchangedam.presentation.home.Oferta
+import com.example.smallchangedam.presentation.home.OfertaUI
 
 private val ColorMarron = Color(0xFFB08968)
 private val ColorGrisClaro = Color(0xFFD9D9D9)
@@ -29,9 +29,9 @@ private val ColorVerdeTag = Color(0xFF72C075)
 @Composable
 fun DetallesOfertaOtroUsuario(navController: NavController, ofertaId: Int) {
     val mockupOferta = when (ofertaId) {
-        1 -> Oferta(1, "Emma R.", 3.9, "USD", "PEN", "150", "3.76", "Hace 5 min")
-        2 -> Oferta(2, "Martín Perez", 4.1, "EUR", "PEN", "300", "3.98", "Hace 2 horas")
-        else -> Oferta(3, "Rosa Rosales", 3.8, "PEN", "USD", "500", "0.26", "Hace 4 min")
+        1 -> OfertaUI(1, "Emma R.", 3.9, "USD", "PEN", "150", "3.76", "Hace 5 min")
+        2 -> OfertaUI(2, "Martín Perez", 4.1, "EUR", "PEN", "300", "3.98", "Hace 2 horas")
+        else -> OfertaUI(3, "Rosa Rosales", 3.8, "PEN", "USD", "500", "0.26", "Hace 4 min")
     }
 
     val curveShape = GenericShape { size, _ ->

@@ -31,15 +31,12 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
-    var nombres by remember { mutableStateOf("") }
-    var apellidos by remember { mutableStateOf("") }
     var usuario by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     var confirmarContrasena by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
 
-    // Estados de error independientes
     var errorGeneral by remember { mutableStateOf<String?>(null) }
     var errorCorreo by remember { mutableStateOf<String?>(null) }
     var errorContrasena by remember { mutableStateOf<String?>(null) }
