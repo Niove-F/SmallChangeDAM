@@ -1,5 +1,7 @@
 package com.example.smallchangedam.presentation.auth
 
+import android.content.Context
+import android.provider.Settings.Global.putString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -169,6 +171,7 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
 
             Button(
                 onClick = {
@@ -195,6 +198,20 @@ fun LoginScreen(
 
                             val response = RetrofitClient.apiService.loginUsuario(request)
                             SessionManager.authToken = response.token
+                            SessionManager.userId = response.clienteId
+
+                            // 2. AHORA SÍ: Usamos 'appContext' que es una variable normal y segura para hilos de fondo
+                            val sharedPreferences = appContext.getSharedPreferences("auth_prefs", android.content.Context.MODE_PRIVATE)
+
+                            val nombreExtraido = usuario.substringBefore("@").replaceFirstChar { it.uppercase() }
+
+                            sharedPreferences.edit().apply {
+                                putString("auth_token", response.token)
+                                putInt("user_id", response.clienteId) // <-- Guarda también el entero
+                                putString("user_name", nombreExtraido)
+                                apply()
+                            }
+
                             onLoginSuccess()
 
                         } catch (e: HttpException) {
