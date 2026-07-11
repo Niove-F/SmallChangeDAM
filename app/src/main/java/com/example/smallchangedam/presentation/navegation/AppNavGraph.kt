@@ -20,6 +20,9 @@ import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 import com.example.smallchangedam.presentation.perfil.ProfileScreen
 import com.example.smallchangedam.data.RetrofitClient
 import com.example.smallchangedam.presentation.transactions.PaymentGatewayMockupScreen
+import com.example.smallchangedam.presentation.transactions.TipoCambioScreen
+import com.example.smallchangedam.presentation.offers.MisOfertasScreen
+import com.example.smallchangedam.presentation.transactions.HistorialTransaccionesScreen
 
 @Composable
 fun AppNavGraph() {
@@ -142,6 +145,18 @@ fun AppNavGraph() {
                 // Si necesitas pasar el ofertaId o vendedorId dinámicamente,
                 // puedes agregarlos también como argumentos de navegación.
             )
+        }
+
+        composable("tipoCambio") {
+            TipoCambioScreen(navController = navController)
+        }
+
+        composable("misOfertas") {
+            MisOfertasScreen(navController = navController)
+        }
+
+        composable("historialTransacciones") {
+            HistorialTransaccionesScreen(navController = navController)
         }
     }
 }

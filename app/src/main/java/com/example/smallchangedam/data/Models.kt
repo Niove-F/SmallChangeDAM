@@ -17,9 +17,9 @@ data class LoginRequest(
 
 data class LoginResponse(
     @SerializedName("token") val token: String,
-    @SerializedName("ClienteId") val clienteId: Int, // <-- ¡Mapeamos la propiedad de C#!
-    @SerializedName("Nombre") val nombre: String? = null,
-    val mensaje: String? = null // Por si manejas mensajes de error genéricos
+    @SerializedName(value = "ClienteId", alternate = ["id", "clienteId", "userId"]) val clienteId: Int,
+    @SerializedName(value = "Nombre", alternate = ["nombre", "userName"]) val nombre: String? = null,
+    val mensaje: String? = null
 )
 
 data class AuthResponse(
