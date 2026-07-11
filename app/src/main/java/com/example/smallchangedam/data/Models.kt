@@ -69,6 +69,14 @@ data class OfertaUpdateRequest(
     @SerializedName("estado") val estado: Boolean? = null
 )
 
+data class OfertaStatusUpdateRequest(
+    @SerializedName("estado") val estado: Boolean? = null
+)
+
+data class OfertaStatusResponse(
+    @SerializedName("mensaje") val mensaje: String? = null
+)
+
 // DTO para el buscador de coincidencias inversas
 data class BuscarCoincidenciaRequest(
     @SerializedName("monedaAEnviar") val monedaAEnviar: String,

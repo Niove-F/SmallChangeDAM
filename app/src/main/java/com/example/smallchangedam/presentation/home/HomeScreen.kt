@@ -61,12 +61,16 @@ fun HomeScreen(navController: NavController) {
     var montoMinimo  by remember { mutableStateOf("") }
     var montoMaximo  by remember { mutableStateOf("") }
 
+    var ordenarPorMayorTasa by remember { mutableStateOf(false) }
+    var ordenarMenuExpanded by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         try {
             isLoading = true
             val response = RetrofitClient.apiService.listarOfertas()
+            val ofertasActivas = response.filter { it.estado == true }
 
-            ofertasTotales = response.map { ofertaBackend ->
+            ofertasTotales = ofertasActivas.map { ofertaBackend ->
                 OfertaUI(
                     id = ofertaBackend.id,
                     usuario = ofertaBackend.nombreUsuario ?: "Usuario #${ofertaBackend.clienteId}",
@@ -87,7 +91,7 @@ fun HomeScreen(navController: NavController) {
     }
     val ofertasFiltradas by remember {
         derivedStateOf {
-            ofertasTotales.filter { oferta ->
+            val filtradas = ofertasTotales.filter { oferta ->
                 // 1. Filtro por Moneda (Aplica si coincide con lo que das o recibes)
                 val cumpleMoneda = filtroMoneda == "Todas" ||
                         oferta.monedaADar == filtroMoneda ||
@@ -96,10 +100,10 @@ fun HomeScreen(navController: NavController) {
                 // 2. Filtro por Operación (Ej: Si buscas "Comprar USD", buscas ofertas donde la Moneda a Recibir sea USD)
                 val cumpleOperacion = when (filtroOperacion) {
                     "Todos" -> true
-                    "Dar PEN" -> oferta.monedaADar == "PEN"
-                    "Recibir PEN" -> oferta.monedaARecibir == "PEN"
-                    "Dar USD" -> oferta.monedaADar == "USD"
-                    "Recibir USD" -> oferta.monedaARecibir == "USD"
+                    "PEN" -> oferta.monedaARecibir == "PEN"
+                    "USD" -> oferta.monedaARecibir == "USD"
+                    "EUR" -> oferta.monedaARecibir == "EUR"
+                    "JPY" -> oferta.monedaARecibir == "JPY"
                     else -> true
                 }
 
@@ -113,6 +117,12 @@ fun HomeScreen(navController: NavController) {
 
                 cumpleMoneda && cumpleOperacion && cumpleMin && cumpleMax
             }
+
+            if (ordenarPorMayorTasa) {
+                filtradas.sortedByDescending { it.tc.toDoubleOrNull() ?: 0.0 }
+            } else {
+                filtradas // Se queda con el orden original (Más recientes por ID)
+            }
         }
     }
 
@@ -124,7 +134,7 @@ fun HomeScreen(navController: NavController) {
     }
 
     LaunchedEffect(reachedBottom) {
-        if (reachedBottom && itemsVisibles < ofertasTotales.size) {
+        if (reachedBottom && itemsVisibles < ofertasFiltradas.size) {
             itemsVisibles += 10
         }
     }
@@ -144,8 +154,8 @@ Box(modifier = Modifier.fillMaxSize()) {
                 actions = {
                     IconButton(onClick = { navController.navigate("configUser") }) {
                         Icon(
-                            Icons.Default.AccountCircle, 
-                            contentDescription = "Perfil", 
+                            Icons.Default.AccountCircle,
+                            contentDescription = "Perfil",
                             tint = Color.White
                         )
                     }
@@ -172,15 +182,47 @@ Box(modifier = Modifier.fillMaxSize()) {
                 onMontoMaxChange = { montoMaximo = it }
             )
 
-            // 2. Fila para "Ordenar por" alineada a la derecha
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                contentAlignment = Alignment.CenterEnd
             ) {
-                Text(text = "Ordenar por: ", fontSize = 14.sp, color = Color.Gray)
+                Row(
+                    modifier = Modifier.clickable { ordenarMenuExpanded = true },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Ordenar por: ${if (ordenarPorMayorTasa) "Mayor tasa (TC)" else "Más recientes"}",
+                        fontSize = 14.sp,
+                        color = ColorMarron,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = ColorMarron)
+                }
+
+                DropdownMenu(
+                    expanded = ordenarMenuExpanded,
+                    onDismissRequest = { ordenarMenuExpanded = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Más recientes", fontSize = 14.sp) },
+                        onClick = {
+                            ordenarPorMayorTasa = false
+                            ordenarMenuExpanded = false
+                            itemsVisibles = 10
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Mayor tasa (TC)", fontSize = 14.sp) },
+                        onClick = {
+                            ordenarPorMayorTasa = true
+                            ordenarMenuExpanded = false
+                            itemsVisibles = 10
+                        }
+                    )
+                }
             }
 
             // 3. Manejo de Estados de la Lista de Ofertas
@@ -195,7 +237,7 @@ Box(modifier = Modifier.fillMaxSize()) {
                         Text(text = errorMessage!!, color = Color.Red, modifier = Modifier.padding(16.dp))
                     }
                 }
-                ofertasTotales.isEmpty() -> {
+                ofertasFiltradas.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = "Aún no hay ofertas publicadas.", color = Color.Gray)
                     }
@@ -207,14 +249,14 @@ Box(modifier = Modifier.fillMaxSize()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        val ofertasMostrar = ofertasTotales.take(itemsVisibles)
+                        val ofertasMostrar = ofertasFiltradas.take(itemsVisibles)
 
-                        items(ofertasMostrar) { oferta ->
+                        items(ofertasMostrar, key = {it.id}) { oferta ->
                             TarjetaOferta(oferta, navController)
                         }
 
                         // Indicador de carga cuando hace scroll hacia abajo
-                        if (itemsVisibles < ofertasTotales.size) {
+                        if (itemsVisibles < ofertasFiltradas.size) {
                             item {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -262,14 +304,14 @@ fun FiltrosSeccion(
             // Dropdown de Monedas
             FiltroDropdown(
                 text = if (filtroMoneda == "Todas") "Todas las monedas" else filtroMoneda,
-                options = listOf("Todas", "USD", "PEN", "EUR"),
+                options = listOf("Todas", "USD", "PEN", "EUR", "JPY"),
                 modifier = Modifier.weight(1f),
                 onOptionSelected = onMonedaChange
             )
             // Dropdown de Operaciones
             FiltroDropdown(
                 text = if (filtroOperacion == "Todos") "Cualquier Operación" else filtroOperacion,
-                options = listOf("Todos", "Dar PEN", "Recibir PEN", "Dar USD", "Recibir USD"),
+                options = listOf("Todos", "PEN", "USD", "EUR", "JPY"),
                 modifier = Modifier.weight(1f),
                 onOptionSelected = onOperacionChange
             )
@@ -280,13 +322,13 @@ fun FiltrosSeccion(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FiltroInput(
-                placeholder = "Monto mín",
+                placeholder = "Monto mínimo",
                 value = montoMinimo,
                 onValueChange = onMontoMinChange,
                 modifier = Modifier.weight(1f)
             )
             FiltroInput(
-                placeholder = "Monto máx",
+                placeholder = "Monto máximo",
                 value = montoMaximo,
                 onValueChange = onMontoMaxChange,
                 modifier = Modifier.weight(1f)
@@ -389,7 +431,9 @@ fun FiltroInput(
                 unfocusedTextColor = Color.Black
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 0.dp)
         )
     }
 }
