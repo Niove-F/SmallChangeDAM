@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -51,7 +51,7 @@ fun CustomBottomBar(
                 val colorIcono = Color(0xFF333333)
 
                 BotonIsla("T.C.", Icons.Default.DateRange, colorIcono) { navController.navigate("tipoCambio") }
-                BotonIsla("Mis Ofertas", Icons.Default.List, colorIcono) { navController.navigate("misOfertas") }
+                BotonIsla("Mis Ofertas", Icons.AutoMirrored.Filled.List, colorIcono) { navController.navigate("misOfertas") }
                 BotonIsla("Publicar", Icons.Default.AddCircle, colorIcono) { navController.navigate("publicarOferta") }
             }
         }

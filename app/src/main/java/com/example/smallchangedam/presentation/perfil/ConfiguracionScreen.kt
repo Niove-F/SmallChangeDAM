@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -149,6 +150,9 @@ fun ConfiguracionScreen(
                 ConfigItem(Icons.Filled.Info, "Cambiar Idioma") {},
                 ConfigItem(Icons.Filled.Settings, "Divisa Predeterminada") {},
                 ConfigItem(Icons.Default.Notifications, "Preferencias de Notifs.") {},
+                ConfigItem(Icons.Default.History, "Historial de Transacciones") {
+                    navController.navigate("historialTransacciones")
+                },
                 ConfigItem(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión") {
                     val sharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
 
