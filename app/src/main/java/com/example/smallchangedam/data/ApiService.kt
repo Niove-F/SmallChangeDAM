@@ -73,8 +73,8 @@ interface ApiService {
     suspend fun actualizarEstadoOferta(@Path("id") id: Int, @Body request: OfertaStatusUpdateRequest): List<OfertaStatusResponse>
 
     // Invoca tu algoritmo de coincidencia inversa con tolerancia del 2%
-    @POST("api/ofertas/buscar-coincidencia")
-    suspend fun buscarCoincidenciaInversa(@Body request: BuscarCoincidenciaRequest): CoincidenciaOfertaResponse?
+    @GET("api/ofertas/buscar-coincidencia")
+    suspend fun buscarCoincidenciaInversa(@QueryMap opciones: Map<String, String>): Response<CoincidenciaOfertaResponse>
 
 
     // --- TRANSACCIONES ---

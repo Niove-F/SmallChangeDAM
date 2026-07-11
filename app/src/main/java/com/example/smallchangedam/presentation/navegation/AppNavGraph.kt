@@ -80,7 +80,10 @@ fun AppNavGraph() {
             } else {
                 PublishOfferScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onOfferPublished = { navController.popBackStack() }
+                    onOfferPublished = { navController.popBackStack() },
+                    onNavigateToOfferDetails = { id ->
+                        navController.navigate("detallesOferta/$id")
+                    }
                 )
             }
         }

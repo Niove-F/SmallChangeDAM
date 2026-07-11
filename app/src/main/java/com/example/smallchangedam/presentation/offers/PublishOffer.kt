@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -47,7 +49,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.smallchangedam.data.BuscarCoincidenciaRequest
 import com.example.smallchangedam.data.CambioMonedaRequest
+import com.example.smallchangedam.data.CoincidenciaOfertaResponse
 import com.example.smallchangedam.data.OfertaRequest
 import com.example.smallchangedam.data.RetrofitClient
 import com.example.smallchangedam.data.SessionManager
@@ -67,7 +72,8 @@ val AlertRed = Color(0xFFB71C1C)
 @Composable
 fun PublishOfferScreen(
     onNavigateBack: () -> Unit,
-    onOfferPublished: () -> Unit
+    onOfferPublished: () -> Unit,
+    onNavigateToOfferDetails: (Int) -> Unit
 ) {
     var tengoCurrency by remember { mutableStateOf("") }
     var quieroCurrency by remember { mutableStateOf("") }
@@ -83,6 +89,10 @@ fun PublishOfferScreen(
     var expandedTengo by remember { mutableStateOf(false) }
     var expandedQuiero by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    var showConfirmPublishModal by remember { mutableStateOf(false) }
+    var showMatchFoundModal by remember { mutableStateOf(false) }
+    var coincidenciaEncontrada by remember { mutableStateOf<CoincidenciaOfertaResponse?>(null) }
 
     // Carga inicial del catálogo de divisas
     LaunchedEffect(Unit) {
@@ -152,7 +162,8 @@ fun PublishOfferScreen(
         }
     }
 
-    fun publicarOferta() {
+    // Inicia el flujo analizando si existen ofertas cruzadas en tiempo real
+    fun evaluarYProcesarMatching() {
         val cantDouble = cantidad.toDoubleOrNull()
         val tasaDouble = tasaCambio.toDoubleOrNull()
         if (cantDouble == null || cantDouble <= 0.0) {
@@ -167,9 +178,60 @@ fun PublishOfferScreen(
             errorMessage = "La moneda de origen y destino no pueden ser iguales."
             return
         }
+
         scope.launch {
             isPublishing = true
             errorMessage = null
+            try {
+                val matchRequest = BuscarCoincidenciaRequest(
+                    monedaAEnviar = tengoCurrency,
+                    monedaARecibir = quieroCurrency,
+                    cantidad = cantDouble,
+                    tipoCambio = tasaDouble
+                )
+
+                val queryParams = mapOf(
+                    "monedaAEnviar" to matchRequest.monedaAEnviar,
+                    "monedaARecibir" to matchRequest.monedaARecibir,
+                    "cantidad" to matchRequest.cantidad.toString(),
+                    "tipoCambio" to matchRequest.tipoCambio.toString()
+                )
+
+                // Petición al endpoint de coincidencia inversa del Backend
+                val responseEnvelope = RetrofitClient.apiService.buscarCoincidenciaInversa(opciones = queryParams)
+
+                if(responseEnvelope.isSuccessful) {
+                    val response = responseEnvelope.body()
+
+                    if (response != null) {
+                        coincidenciaEncontrada = response
+                        showMatchFoundModal = true
+                    } else {
+                        showConfirmPublishModal = true
+                    }
+                } else {
+                    errorMessage = "Error en el servidor: ${responseEnvelope.code()}"
+                }
+
+            } catch (e: Exception) {
+                Log.e("MATCHING_OFFER", "Fallo al evaluar matching inverso", e)
+                // Fallback preventivo: Si falla la búsqueda, permitimos continuar por el flujo normal
+                showConfirmPublishModal = true
+            } finally {
+                isPublishing = false
+            }
+        }
+    }
+
+    fun ejecutarPublicacionDirecta() {
+        val cantDouble = cantidad.toDoubleOrNull() ?: return
+        val tasaDouble = tasaCambio.toDoubleOrNull() ?: return
+
+        scope.launch {
+            isPublishing = true
+            errorMessage = null
+            showConfirmPublishModal = false
+            showMatchFoundModal = false
             try {
                 val request = OfertaRequest(
                     monedaAEnviar = tengoCurrency,
@@ -413,7 +475,7 @@ fun PublishOfferScreen(
                             Text("Cancelar")
                         }
                         Button(
-                            onClick = { publicarOferta() },
+                            onClick = { evaluarYProcesarMatching() },
                             enabled = !isLoading && !isPublishing && currencyOptions.isNotEmpty(),
                             colors = ButtonDefaults.buttonColors(containerColor = BrownTheme),
                             shape = RoundedCornerShape(12.dp),
@@ -434,4 +496,75 @@ fun PublishOfferScreen(
             }
         }
     }
+
+    // ==========================================
+    // MODAL I: Confirmación Normal (Sin Matches)
+    // ==========================================
+    if (showConfirmPublishModal) {
+        AlertDialog(
+            onDismissRequest = { showConfirmPublishModal = false },
+            title = { Text("Confirmar Publicación", fontWeight = FontWeight.Bold, color = BrownTheme) },
+            text = { Text("No se detectaron ofertas inversas exactas en este momento. ¿Deseas guardar y subir tu oferta al mercado público?") },
+            confirmButton = {
+                Button(
+                    onClick = { ejecutarPublicacionDirecta() },
+                    colors = ButtonDefaults.buttonColors(containerColor = BrownTheme)
+                ) {
+                    Text("Confirmar", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmPublishModal = false }) {
+                    Text("Revisar", color = Color.Gray)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // ==========================================
+    // MODAL II: Match Encontrado (Coincidencia Activa)
+    // ==========================================
+    if (showMatchFoundModal && coincidenciaEncontrada != null) {
+        AlertDialog(
+            onDismissRequest = { showMatchFoundModal = false },
+            title = { Text("¡Coincidencia Detectada!", fontWeight = FontWeight.Bold, color = ColorVerdeTag) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Hemos encontrado una oferta compatible de otro usuario que calza con tu solicitud:")
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = LightBackground),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(text = "Usuario: ${coincidenciaEncontrada!!.nombreUsuario}", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text(text = "Cantidad ofrecida: ${coincidenciaEncontrada!!.cantidad} $quieroCurrency", fontSize = 13.sp)
+                            Text(text = "Tipo de cambio: ${coincidenciaEncontrada!!.tipoCambio}", fontSize = 13.sp)
+                        }
+                    }
+                    Text("Puedes ir a revisar sus detalles para realizar el intercambio inmediato o continuar con tu publicación original.")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showMatchFoundModal = false
+                        onNavigateToOfferDetails(coincidenciaEncontrada!!.id)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorVerdeTag)
+                ) {
+                    Text("Ver Oferta Compatible", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ejecutarPublicacionDirecta() }) {
+                    Text("Publicar de todos modos", color = BrownTheme, fontWeight = FontWeight.Medium)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
 }
