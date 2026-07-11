@@ -70,7 +70,7 @@ interface ApiService {
 
     // Cambiar estado true/false de la oferta de forma rápida
     @PATCH("api/ofertas/{id}/estado")
-    suspend fun actualizarEstadoOferta(@Path("id") id: Int, @Query("nuevoEstado") nuevoEstado: Boolean): Response<Boolean>
+    suspend fun actualizarEstadoOferta(@Path("id") id: Int, @Body request: OfertaStatusUpdateRequest): List<OfertaStatusResponse>
 
     // Invoca tu algoritmo de coincidencia inversa con tolerancia del 2%
     @POST("api/ofertas/buscar-coincidencia")

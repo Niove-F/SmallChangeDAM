@@ -128,17 +128,16 @@ fun AppNavGraph() {
 
         composable(
             route = "payment_gateway/{monto}",
-            arguments = listOf(navArgument("monto") { type = NavType.FloatType })
+            arguments = listOf(navArgument("monto") { type = NavType.StringType }) // Usar String previene conflictos de tipos Double/Float en rutas
         ) { backStackEntry ->
-            val monto = backStackEntry.arguments?.getFloat("monto")?.toDouble() ?: 0.0
+            val montoStr = backStackEntry.arguments?.getString("monto")
+            val monto = montoStr?.toDoubleOrNull() ?: 0.0
 
             PaymentGatewayMockupScreen(
                 navController = navController,
-                montoAComprar = monto,
-                onPaymentSuccess = {
-                    // Qué hacer cuando el pago sea exitoso (ej: ir a pantalla de éxito)
-                    navController.navigate("success_screen")
-                }
+                montoAComprar = monto
+                // Si necesitas pasar el ofertaId o vendedorId dinámicamente,
+                // puedes agregarlos también como argumentos de navegación.
             )
         }
     }
