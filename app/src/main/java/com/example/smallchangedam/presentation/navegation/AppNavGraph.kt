@@ -2,6 +2,7 @@ package com.example.smallchangedam.presentation.navegation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,9 +20,11 @@ import com.example.smallchangedam.presentation.perfil.ConfiguracionScreen
 import com.example.smallchangedam.presentation.perfil.EditarPerfilScreen
 import com.example.smallchangedam.presentation.perfil.ProfileScreen
 import com.example.smallchangedam.data.RetrofitClient
+import com.example.smallchangedam.data.RetrofitClient.apiService
 import com.example.smallchangedam.presentation.transactions.PaymentGatewayMockupScreen
-import com.example.smallchangedam.presentation.transactions.TipoCambioScreen
+import com.example.smallchangedam.presentation.tipoCambio.TipoCambioScreen
 import com.example.smallchangedam.presentation.offers.MisOfertasScreen
+import com.example.smallchangedam.presentation.tipoCambio.TipoCambioViewModel
 import com.example.smallchangedam.presentation.transactions.HistorialTransaccionesScreen
 
 @Composable
@@ -147,8 +150,17 @@ fun AppNavGraph() {
             )
         }
 
-        composable("tipoCambio") {
-            TipoCambioScreen(navController = navController)
+        composable(route = "tipoCambio") {
+            // 1. Inicializas el ViewModel correctamente pasándole tu apiService
+            val tipoCambioViewModel: TipoCambioViewModel = viewModel {
+                TipoCambioViewModel(apiService) // Usa el apiService que recibe tu AppNavGraph
+            }
+
+            // 2. Le pasas la instancia creada (tipoCambioViewModel) a la pantalla
+            TipoCambioScreen(
+                viewModel = tipoCambioViewModel,
+                navController = navController
+            )
         }
 
         composable("misOfertas") {

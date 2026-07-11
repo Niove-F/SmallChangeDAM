@@ -123,6 +123,32 @@ data class CambioMonedaResponse(
     val fechaActualizacion: String
 )
 
+// El modelo que representa cada par de divisas
+data class TipoCambio(
+    val origen: String,     // Ej: "USD"
+    val destino: String,    // Ej: "PEN"
+    val tasa: Double,       // Ej: 3.3968
+    val fechaHora: String   // Ej: "11/07 05:15"
+)
+
+// Tu clase de estado de la pantalla
+data class TipoCambioUiState(
+    val cantidad: String = "",
+    val tasaActual: Double = 1.0,
+    val monedaTengo: String = "USD",
+    val monedaQuiero: String = "PEN",
+    val cargandoTasa: Boolean = false,
+    val monedasDisponibles: List<String> = listOf("USD", "PEN", "EUR"),
+
+    // AQUÍ NACE LA LISTA: Añadimos la lista de conversiones populares con datos de prueba
+    val listaTasasDeCambio: List<TipoCambio> = listOf(
+        TipoCambio("USD", "PEN", 3.3968, "11/07 05:15"),
+        TipoCambio("PEN", "USD", 0.2944, "11/07 05:15"),
+        TipoCambio("EUR", "USD", 1.1432, "11/07 05:15"),
+        TipoCambio("USD", "EUR", 0.8747, "11/07 05:15")
+    )
+)
+
 data class TransaccionResponse(
     @SerializedName("id") val id: Int,
     @SerializedName("ofertaId") val ofertaId: Int,
